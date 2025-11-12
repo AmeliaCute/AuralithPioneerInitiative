@@ -1,0 +1,16 @@
+*
+!.gitignore
+!gradle.properties
+!build.gradle
+!gradlew
+!gradlew.bat
+!settings.gradle
+
+!src
+!src/**/*
+
+!.github
+!.github/**/*
+
+!gradle
+!gradle/**/*
