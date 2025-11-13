@@ -1,6 +1,7 @@
 package cute.ame.auralithpioneerinitiative;
 
 import com.mojang.logging.LogUtils;
+import cute.ame.auralithpioneerinitiative.Registries.ShaderRegistries;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
@@ -22,6 +23,7 @@ public class Auralithpioneerinitiative {
 
     private void commonSetup(final FMLCommonSetupEvent event)
     {
+        ShaderRegistries.register();
     }
 
 

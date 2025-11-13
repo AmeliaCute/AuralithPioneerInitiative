@@ -3,39 +3,68 @@ package cute.ame.auralithpioneerinitiative.Space.CelestialBody;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Camera;
-import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 
-public class CelestialBody
+public class CelestialBodyBase
 {
-    private final Vec3 pos;
-    private final float size;
     private static final double DISTANCE_THRESHOLD = 350.0;
 
-    public CelestialBody(Vec3 pos, float size)
+    protected final Vec3 pos;
+    protected final float size;
+
+    protected Vec3 lightSourcePos = null;
+
+    public CelestialBodyBase(Vec3 pos, float size)
     {
         this.pos = pos;
         this.size = size;
     }
 
-    public void render(ClientLevel level, int ticks, float partialTick, Matrix4f modelViewMatrix, Camera camera, Matrix4f projectionMatrix, boolean isFoggy, Runnable setupFog, PoseStack poseStack)
+    public void render(PoseStack poseStack, Camera camera)
     {
-        renderCustomCube(poseStack, camera);
-    }
-
-    public void renderCustomCube(PoseStack poseStack, Camera camera) {
         poseStack.pushPose();
         poseStack.setIdentity();
 
-
         Vec3 cameraPos = camera.getPosition();
-
         double relX = this.pos.x - cameraPos.x;
         double relY = this.pos.y - cameraPos.y;
         double relZ = this.pos.z - cameraPos.z;
 
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+
+        float size = processRelativePosAndSize(poseStack, camera, relX, relY, relZ);
+        renderCube(size, poseStack, relX, relY, relZ);
+
+        renderExtra(poseStack, camera, relX, relY, relZ);
+
+        RenderSystem.disableBlend();
+        poseStack.popPose();
+    }
+
+    public void renderExtra(PoseStack poseStack, Camera camera, double relX, double relY, double relZ)
+    {}
+
+
+    public  void setLightSourcePos(Vec3 lightSourcePos)
+    {
+        this.lightSourcePos = lightSourcePos;
+    }
+
+    public boolean emitLight()
+    {
+        return false;
+    }
+
+    public Vec3 getPos()
+    {
+        return pos;
+    }
+
+    protected float processRelativePosAndSize(PoseStack poseStack, Camera camera, double relX, double relY, double relZ)
+    {
         double distance = Math.sqrt(relX * relX + relY * relY + relZ * relZ);
 
         float effectiveSize;
@@ -59,25 +88,25 @@ public class CelestialBody
         }
 
         poseStack.translate(renderX, renderY, renderZ);
+        return effectiveSize;
+    }
 
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.blendFunc(770, 1);
-        RenderSystem.depthMask(false);
+    protected void renderCube(float size, PoseStack poseStack, double relX, double relY, double relZ)
+    {
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
 
         Matrix4f matrix = poseStack.last().pose();
         BufferBuilder bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
 
         float[][] vertices = {
-                {-effectiveSize, -effectiveSize, -effectiveSize},
-                { effectiveSize, -effectiveSize, -effectiveSize},
-                { effectiveSize,  effectiveSize, -effectiveSize},
-                {-effectiveSize,  effectiveSize, -effectiveSize},
-                {-effectiveSize, -effectiveSize,  effectiveSize},
-                { effectiveSize, -effectiveSize,  effectiveSize},
-                { effectiveSize,  effectiveSize,  effectiveSize},
-                {-effectiveSize,  effectiveSize,  effectiveSize}
+                {-size, -size, -size},
+                { size, -size, -size},
+                { size,  size, -size},
+                {-size,  size, -size},
+                {-size, -size,  size},
+                { size, -size,  size},
+                { size,  size,  size},
+                {-size,  size,  size}
         };
 
         int[][] indices = {
@@ -97,7 +126,5 @@ public class CelestialBody
             }
 
         BufferUploader.drawWithShader(bufferBuilder.build());
-
-        poseStack.popPose();
     }
 }
