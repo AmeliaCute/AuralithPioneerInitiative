@@ -12,6 +12,7 @@ public class CelestialBody
 {
     private final Vec3 pos;
     private final float size;
+    private static final double DISTANCE_THRESHOLD = 350.0;
 
     public CelestialBody(Vec3 pos, float size)
     {
@@ -21,13 +22,13 @@ public class CelestialBody
 
     public void render(ClientLevel level, int ticks, float partialTick, Matrix4f modelViewMatrix, Camera camera, Matrix4f projectionMatrix, boolean isFoggy, Runnable setupFog, PoseStack poseStack)
     {
-        renderCustomCube(poseStack,camera,projectionMatrix);
+        renderCustomCube(poseStack, camera);
     }
 
-    protected void renderCustomCube(PoseStack poseStack, Camera camera, Matrix4f projectionMatrix) {
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+    public void renderCustomCube(PoseStack poseStack, Camera camera) {
+        poseStack.pushPose();
+        poseStack.setIdentity();
+
 
         Vec3 cameraPos = camera.getPosition();
 
@@ -35,23 +36,48 @@ public class CelestialBody
         double relY = this.pos.y - cameraPos.y;
         double relZ = this.pos.z - cameraPos.z;
 
-        poseStack.pushPose();
-        poseStack.translate(relX, relY, relZ);
+        double distance = Math.sqrt(relX * relX + relY * relY + relZ * relZ);
+
+        float effectiveSize;
+        double renderX, renderY, renderZ;
+
+        if (distance > DISTANCE_THRESHOLD) {
+            double normalizedX = relX / distance;
+            double normalizedY = relY / distance;
+            double normalizedZ = relZ / distance;
+
+            renderX = normalizedX * DISTANCE_THRESHOLD;
+            renderY = normalizedY * DISTANCE_THRESHOLD;
+            renderZ = normalizedZ * DISTANCE_THRESHOLD;
+
+            effectiveSize = (float) (this.size * DISTANCE_THRESHOLD / distance);
+        } else {
+            renderX = relX;
+            renderY = relY;
+            renderZ = relZ;
+            effectiveSize = this.size;
+        }
+
+        poseStack.translate(renderX, renderY, renderZ);
+
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.blendFunc(770, 1); // Additive blending for bloom effect
+        RenderSystem.depthMask(false); // Don't write to depth buffer for glow layers
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
 
         Matrix4f matrix = poseStack.last().pose();
         BufferBuilder bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
 
-        float r = 1.0F, g = 0.5F, b = 0.0F, a = 0.8F;
-
         float[][] vertices = {
-                {-size, -size, -size},
-                { size, -size, -size},
-                { size,  size, -size},
-                {-size,  size, -size},
-                {-size, -size,  size},
-                { size, -size,  size},
-                { size,  size,  size},
-                {-size,  size,  size}
+                {-effectiveSize, -effectiveSize, -effectiveSize},
+                { effectiveSize, -effectiveSize, -effectiveSize},
+                { effectiveSize,  effectiveSize, -effectiveSize},
+                {-effectiveSize,  effectiveSize, -effectiveSize},
+                {-effectiveSize, -effectiveSize,  effectiveSize},
+                { effectiveSize, -effectiveSize,  effectiveSize},
+                { effectiveSize,  effectiveSize,  effectiveSize},
+                {-effectiveSize,  effectiveSize,  effectiveSize}
         };
 
         int[][] indices = {
@@ -67,14 +93,11 @@ public class CelestialBody
             for (int idx : tri)
             {
                 float[] v = vertices[idx];
-                bufferBuilder.addVertex(matrix, v[0], v[1], v[2]).setColor(r, g, b, a);
+                bufferBuilder.addVertex(matrix, v[0], v[1], v[2]).setColor(1, .5f, 0, 1);
             }
 
-
         BufferUploader.drawWithShader(bufferBuilder.build());
+
         poseStack.popPose();
-
-        RenderSystem.disableBlend();
     }
-
 }

@@ -12,9 +12,10 @@ import org.joml.Matrix4f;
 
 public class SpaceDimensionEffect extends DimensionSpecialEffects
 {
-    private static final CelestialBody TEST_CUBE = new CelestialBody(Vec3.ZERO, 80);
+    public static final CelestialBody TEST_CUBE = new CelestialBody(Vec3.ZERO, 80);
 
-    public SpaceDimensionEffect() {
+    public SpaceDimensionEffect()
+    {
         super(
                 Float.NaN,
                 false,
@@ -39,23 +40,10 @@ public class SpaceDimensionEffect extends DimensionSpecialEffects
         return false;
     }
 
+
     @Override
     public boolean renderSky(ClientLevel level, int ticks, float partialTick, Matrix4f modelViewMatrix, Camera camera, Matrix4f projectionMatrix, boolean isFoggy, Runnable setupFog) {
-        PoseStack poseStack = new PoseStack();
-        poseStack.last().pose().set(modelViewMatrix);
-        RenderSystem.depthMask(false);
-        RenderSystem.disableDepthTest();
-        RenderSystem.setShaderFogStart(Float.POSITIVE_INFINITY);
-        RenderSystem.setShaderFogEnd(Float.POSITIVE_INFINITY);
-        RenderSystem.disableCull();
-
-        TEST_CUBE.render(level, ticks, partialTick, modelViewMatrix, camera, projectionMatrix, isFoggy, setupFog, poseStack);
-
-        RenderSystem.enableDepthTest();
-        RenderSystem.enableCull();
-        RenderSystem.depthMask(true);
-        setupFog.run();
-        return true;
+        return false;
     }
 
 
