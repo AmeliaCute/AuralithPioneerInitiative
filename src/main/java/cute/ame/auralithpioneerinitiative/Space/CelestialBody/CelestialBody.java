@@ -62,8 +62,8 @@ public class CelestialBody
 
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        RenderSystem.blendFunc(770, 1); // Additive blending for bloom effect
-        RenderSystem.depthMask(false); // Don't write to depth buffer for glow layers
+        RenderSystem.blendFunc(770, 1);
+        RenderSystem.depthMask(false);
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
 
         Matrix4f matrix = poseStack.last().pose();
