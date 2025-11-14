@@ -11,17 +11,43 @@ import org.joml.Vector3f;
 
 public class CelestialPlanet extends CelestialBodyBase
 {
-    protected static final Vector3f atmosphereColor = new Vector3f(.1f, .1f, .5f);
-    protected static final float atmosphereOpacity = 0.7f;
-    protected static final float fresnelPower = 1.0f;
-    protected static final float fresnelIntensity = 1.25f;
+    private static final float[][] CUBE_VERTICES = {
+            {-1f, -1f, -1f},
+            { 1f, -1f, -1f},
+            { 1f,  1f, -1f},
+            {-1f,  1f, -1f},
+            {-1f, -1f,  1f},
+            { 1f, -1f,  1f},
+            { 1f,  1f,  1f},
+            {-1f,  1f,  1f}
+    };
+
+    private static final float[][] VERTEX_NORMALS = {
+            {-0.577f, -0.577f, -0.577f},
+            { 0.577f, -0.577f, -0.577f},
+            { 0.577f,  0.577f, -0.577f},
+            {-0.577f,  0.577f, -0.577f},
+            {-0.577f, -0.577f,  0.577f},
+            { 0.577f, -0.577f,  0.577f},
+            { 0.577f,  0.577f,  0.577f},
+            {-0.577f,  0.577f,  0.577f}
+    };
+
+    private static final int[] CUBE_INDICES = {
+            0, 3, 2,  0, 2, 1,  // Front
+            4, 5, 6,  4, 6, 7,  // Back
+            3, 7, 6,  3, 6, 2,  // Top
+            0, 1, 5,  0, 5, 4,  // Bottom
+            1, 2, 6,  1, 6, 5,  // Right
+            0, 4, 7,  0, 7, 3   // Left
+    };
 
     public CelestialPlanet(Vec3 pos, float size) {
         super(pos, size);
     }
 
     @Override
-    public void render( PoseStack poseStack, Camera camera)
+    public void render(PoseStack poseStack, Camera camera)
     {
         poseStack.pushPose();
         poseStack.setIdentity();
@@ -32,77 +58,152 @@ public class CelestialPlanet extends CelestialBodyBase
         double relZ = this.pos.z - cameraPos.z;
 
         float size = processRelativePosAndSize(poseStack, camera, relX, relY, relZ);
-        renderPlanetCube(size, poseStack, relX, relY, relZ);
+        renderPlanetCube(size, poseStack, camera, relX, relY, relZ);
 
         renderExtra(poseStack, camera, relX, relY, relZ);
 
         poseStack.popPose();
     }
 
-    protected void renderPlanetCube(float size, PoseStack poseStack, double relX, double relY, double relZ)
+    protected void renderPlanetCube(float size, PoseStack poseStack, Camera camera, double relX, double relY, double relZ)
+    {
+        renderPlanetTexture(size, poseStack, camera, relX, relY, relZ);
+        //renderAtmosphere(size * 1.05f, poseStack, camera, relX, relY, relZ);
+    }
+
+    protected void renderPlanetTexture(float size, PoseStack poseStack, Camera camera, double relX, double relY, double relZ)
     {
         ShaderInstance shader = ShaderRegistries.FRESNEL_ATMOSPHERE_SHADER;
         if (shader == null) return;
 
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthMask(true);
+        RenderSystem.enableCull();
+        RenderSystem.disableBlend();
         RenderSystem.setShader(() -> shader);
 
-        shader.safeGetUniform("uAtmosphereColor").set(atmosphereColor.x, atmosphereColor.y, atmosphereColor.z);
-        shader.safeGetUniform("uDirection").set(0f, 0f, 0f);
-        shader.safeGetUniform("uOpacity").set(atmosphereOpacity);
-        shader.safeGetUniform("uFresnelPower").set(fresnelPower);
-        shader.safeGetUniform("uFresnelIntensity").set(fresnelIntensity);
-        shader.safeGetUniform("ModelViewMat").set(poseStack.last().pose());
-        shader.safeGetUniform("ProjMat").set(RenderSystem.getProjectionMatrix());
+        shader.safeGetUniform("uFresnelPower").set(0.0f);
+        shader.safeGetUniform("uAtmosphereIntensity").set(0.0f);
+
+        Vec3 cameraPos = camera.getPosition();
+        shader.safeGetUniform("uCameraPos").set(
+                (float)cameraPos.x,
+                (float)cameraPos.y,
+                (float)cameraPos.z
+        );
+        shader.safeGetUniform("uPlanetPos").set(
+                (float)this.pos.x,
+                (float)this.pos.y,
+                (float)this.pos.z
+        );
 
         Matrix4f matrix = poseStack.last().pose();
-        BufferBuilder bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
+        PoseStack.Pose normalMatrix = poseStack.last();
 
-        float[][] vertices = {
-                {-size, -size, -size},
-                { size, -size, -size},
-                { size,  size, -size},
-                {-size,  size, -size},
-                {-size, -size,  size},
-                { size, -size,  size},
-                { size,  size,  size},
-                {-size,  size,  size}
-        };
+        BufferBuilder bufferBuilder = Tesselator.getInstance().begin(
+                VertexFormat.Mode.TRIANGLES,
+                DefaultVertexFormat.POSITION_COLOR_NORMAL
+        );
 
-        int[][] indices = {
-                {0, 1, 2}, {0, 2, 3},
-                {4, 7, 6}, {4, 6, 5},
-                {3, 2, 6}, {3, 6, 7},
-                {0, 4, 5}, {0, 5, 1},
-                {1, 5, 6}, {1, 6, 2},
-                {0, 3, 7}, {0, 7, 4}
-        };
+        for (int vertexIndex : CUBE_INDICES)
+        {
+            float[] vertex = CUBE_VERTICES[vertexIndex];
+            float[] normal = VERTEX_NORMALS[vertexIndex];
 
-        for (int[] tri : indices) {
-            float[] v0 = vertices[tri[0]];
-            float[] v1 = vertices[tri[1]];
-            float[] v2 = vertices[tri[2]];
+            float vx = vertex[0] * size;
+            float vy = vertex[1] * size;
+            float vz = vertex[2] * size;
 
-            float ux = v1[0] - v0[0];
-            float uy = v1[1] - v0[1];
-            float uz = v1[2] - v0[2];
+            float[] planetColor = getPlanetColor(vertex[0], vertex[1], vertex[2]);
 
-            float vx = v2[0] - v0[0];
-            float vy = v2[1] - v0[1];
-            float vz = v2[2] - v0[2];
-
-            float nx = uy * vz - uz * vy;
-            float ny = uz * vx - ux * vz;
-            float nz = ux * vy - uy * vx;
-
-            float len = (float)Math.sqrt(nx*nx + ny*ny + nz*nz);
-            if (len == 0) len = 1f;
-            nx /= len; ny /= len; nz /= len;
-
-            bufferBuilder.addVertex(matrix, v0[0], v0[1], v0[2]).setColor(1f, .5f, 0f, 1f).setNormal(nx, ny, nz);
-            bufferBuilder.addVertex(matrix, v1[0], v1[1], v1[2]).setColor(1f, .5f, 0f, 1f).setNormal(nx, ny, nz);
-            bufferBuilder.addVertex(matrix, v2[0], v2[1], v2[2]).setColor(1f, .5f, 0f, 1f).setNormal(nx, ny, nz);
+            bufferBuilder.addVertex(matrix, vx, vy, vz)
+                    .setColor(planetColor[0], planetColor[1], planetColor[2], 1f)
+                    .setNormal(normalMatrix, normal[0], normal[1], normal[2]);
         }
 
         BufferUploader.drawWithShader(bufferBuilder.build());
+    }
+
+    protected void renderAtmosphere(float size, PoseStack poseStack, Camera camera, double relX, double relY, double relZ)
+    {
+        ShaderInstance shader = ShaderRegistries.FRESNEL_ATMOSPHERE_SHADER;
+        if (shader == null) return;
+
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.depthMask(false);
+        RenderSystem.enableCull();
+        RenderSystem.enableDepthTest();
+
+        RenderSystem.setShader(() -> shader);
+
+        float dist = (float)Math.sqrt(relX*relX + relY*relY + relZ*relZ);
+        if (dist > 0.001f) {
+            float invDist = 1.0f / dist;
+            if (shader.safeGetUniform("uViewDirection") != null) {
+                shader.safeGetUniform("uViewDirection").set(
+                        (float)relX * invDist,
+                        (float)relY * invDist,
+                        (float)relZ * invDist
+                );
+            }
+        }
+
+        shader.safeGetUniform("uFresnelPower").set(3.0f);
+        shader.safeGetUniform("uAtmosphereIntensity").set(1.5f);
+
+        Vec3 cameraPos = camera.getPosition();
+        shader.safeGetUniform("uCameraPos").set(
+                (float)cameraPos.x,
+                (float)cameraPos.y,
+                (float)cameraPos.z
+        );
+
+        shader.safeGetUniform("uPlanetPos").set(
+                (float)this.pos.x,
+                (float)this.pos.y,
+                (float)this.pos.z
+        );
+
+        Matrix4f matrix = poseStack.last().pose();
+        PoseStack.Pose normalMatrix = poseStack.last();
+
+        BufferBuilder bufferBuilder = Tesselator.getInstance().begin(
+                VertexFormat.Mode.TRIANGLES,
+                DefaultVertexFormat.POSITION_COLOR_NORMAL
+        );
+
+        for (int vertexIndex : CUBE_INDICES) {
+            float[] vertex = CUBE_VERTICES[vertexIndex];
+            float[] normal = VERTEX_NORMALS[vertexIndex];
+
+            float vx = vertex[0] * size;
+            float vy = vertex[1] * size;
+            float vz = vertex[2] * size;
+
+            bufferBuilder.addVertex(matrix, vx, vy, vz)
+                    .setColor(0.3f, 0.6f, 1.0f, 0.5f)
+                    .setNormal(normalMatrix, normal[0], normal[1], normal[2]);
+        }
+
+        BufferUploader.drawWithShader(bufferBuilder.build());
+        RenderSystem.depthMask(true);
+        RenderSystem.disableBlend();
+        RenderSystem.enableCull();
+    }
+
+    protected float[] getPlanetColor(float x, float y, float z) {
+        float len = (float)Math.sqrt(x*x + y*y + z*z);
+        float nx = x / len;
+        float ny = y / len;
+        float nz = z / len;
+
+        float variation = (nx + ny + nz) * 0.5f + 0.5f;
+
+        float r = 0.8f + variation * 0.2f;
+        float g = 0.4f + variation * 0.1f;
+        float b = 0.1f + variation * 0.05f;
+
+        return new float[]{r, g, b};
     }
 }
