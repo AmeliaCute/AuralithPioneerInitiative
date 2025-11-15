@@ -1,4 +1,4 @@
-package cute.ame.auralithpioneerinitiative.Space.CelestialBody;
+package cute.ame.auralithpioneerinitiative.Space.Body;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;

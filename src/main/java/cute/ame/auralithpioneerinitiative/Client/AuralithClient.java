@@ -22,11 +22,12 @@ public class AuralithClient
         );
     }
 
-    public static CelestialSystem CELESTE = new CelestialSystem();
+    public static CelestialSystem CELESTE;
 
     @SubscribeEvent
     public static void onRender(RenderLevelStageEvent event)
     {
+        if(CELESTE == null) CELESTE = new CelestialSystem();
         if(event.getStage() == RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS && event.getCamera().getEntity().level().dimension().location().getPath().equals("space"))
             CELESTE.render(event.getPoseStack(), event.getCamera());
     }

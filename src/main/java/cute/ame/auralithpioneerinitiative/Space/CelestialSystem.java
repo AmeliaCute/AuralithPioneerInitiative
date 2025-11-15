@@ -1,9 +1,9 @@
 package cute.ame.auralithpioneerinitiative.Space;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import cute.ame.auralithpioneerinitiative.Space.CelestialBody.CelestialBodyBase;
-import cute.ame.auralithpioneerinitiative.Space.CelestialBody.CelestialPlanet;
-import cute.ame.auralithpioneerinitiative.Space.CelestialBody.CelestialSun;
+import cute.ame.auralithpioneerinitiative.Space.Body.CelestialBodyBase;
+import cute.ame.auralithpioneerinitiative.Space.Body.CelestialPlanet;
+import cute.ame.auralithpioneerinitiative.Space.Body.CelestialSun;
 import net.minecraft.client.Camera;
 import net.minecraft.world.phys.Vec3;
 
@@ -17,10 +17,10 @@ public class CelestialSystem
 
     public CelestialSystem()
     {
-        primarySun = new CelestialSun(Vec3.ZERO, 80);
+        primarySun = new CelestialSun(Vec3.ZERO, 200);
 
         objectList.add(
-            new CelestialPlanet(new Vec3(1000, 0, 1000), 20)
+            new CelestialPlanet(new Vec3(1000, 0, 1000), 100)
         );
 
         updateLightSources();

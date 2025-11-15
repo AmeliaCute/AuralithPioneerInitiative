@@ -8,9 +8,11 @@ import net.minecraft.resources.ResourceLocation;
 
 import java.io.IOException;
 
-public class ShaderRegistries
+public class ShaderRegistry
 {
     public static ShaderInstance FRESNEL_ATMOSPHERE_SHADER;
+    public static ShaderInstance PLANET_SURFACE_SHADER;
+    public static ShaderInstance PLANET_CLOUDS_SHADER;
 
     public static void register()
     {
@@ -21,7 +23,20 @@ public class ShaderRegistries
                             Minecraft.getInstance().getResourceManager(),
                             ResourceLocation.fromNamespaceAndPath(Auralithpioneerinitiative.MODID, "fresnel_atmosphere"),
                             DefaultVertexFormat.POSITION_COLOR_NORMAL);
-                } catch (IOException e) {
+
+                    PLANET_SURFACE_SHADER = new ShaderInstance(
+                            Minecraft.getInstance().getResourceManager(),
+                            ResourceLocation.fromNamespaceAndPath(Auralithpioneerinitiative.MODID, "planet_surface"),
+                            DefaultVertexFormat.POSITION_COLOR_NORMAL);
+
+                    PLANET_CLOUDS_SHADER = new ShaderInstance(
+                            Minecraft.getInstance().getResourceManager(),
+                            ResourceLocation.fromNamespaceAndPath(Auralithpioneerinitiative.MODID, "planet_clouds"),
+                            DefaultVertexFormat.POSITION_COLOR_NORMAL);
+
+                }
+                catch (IOException e)
+                {
                     throw new RuntimeException(e);
                 }
             }

@@ -1,4 +1,4 @@
-package cute.ame.auralithpioneerinitiative.Space.CelestialBody;
+package cute.ame.auralithpioneerinitiative.Space.Body;
 
 import net.minecraft.world.phys.Vec3;
 
