@@ -16,10 +16,7 @@ public class AuralithClient
     @SubscribeEvent
     public static void onDimensionEffectRegister(RegisterDimensionSpecialEffectsEvent event)
     {
-        event.register(
-                ResourceLocation.fromNamespaceAndPath(Auralithpioneerinitiative.MODID, "space"),
-                new SpaceDimensionEffect()
-        );
+        event.register(ResourceLocation.fromNamespaceAndPath(Auralithpioneerinitiative.MODID, "space"), new SpaceDimensionEffect());
     }
 
     public static CelestialSystem CELESTE;

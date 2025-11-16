@@ -18,18 +18,28 @@ uniform float uCloudCoverage;
 uniform int uCloudLayers;
 uniform float uCloudSpeed;
 uniform vec4 uCloudColor;
+uniform vec3 uNormalizedPlanetPos;
+uniform float uSizeScale;
+
+uniform float uCloudTurbulence;
+uniform float uCloudDensity;
+uniform float uCloudEdgeSoftness;
+uniform float uCloudShadowIntensity;
+uniform int uCloudCastsShadows;
+uniform float uCloudAnimationSpeed;
 
 out vec4 fragColor;
 
 float getCloudLayer(vec3 pixelPos, int layerIndex, float timeOffset)
 {
-    float speed = uCloudSpeed * (1.0 + float(layerIndex) * 0.3);
-    vec2 cloudUV = pixelPos.xz + vec2(uTime * speed + timeOffset, 0.0);
-    cloudUV += pixelPos.yy * 0.5;
+    float speed = uCloudSpeed * (1.0 + float(layerIndex) * 0.3) * uCloudAnimationSpeed;
 
-    float cloudNoise = fbm(cloudUV * 2.0 + uSeed, 3);
+    vec2 cloudUV = (pixelPos.xz + vec2(uTime * speed + timeOffset, 0.0)) / uSizeScale;
+    cloudUV += (pixelPos.yy * 0.5) / uSizeScale;
+
+    float cloudNoise = fbm(cloudUV * 2.0 * uCloudTurbulence + uSeed, 3);
     float threshold = 1.0 - uCloudCoverage;
-    float cloudMask = smoothstep(threshold - 0.1, threshold + 0.1, cloudNoise);
+    float cloudMask = smoothstep(threshold - uCloudEdgeSoftness, threshold + uCloudEdgeSoftness, cloudNoise);
 
     return cloudMask;
 }
@@ -38,29 +48,39 @@ vec4 getCloudColor(int biome, float density)
 {
     vec4 color = uCloudColor;
 
-    if (biome == 5) { // Gas Giant
-        float bandVariation = density * 0.3;
-        color = mix(
-            vec4(0.95, 0.8, 0.6, 1.0),
-            vec4(0.9, 0.7, 0.5, 1.0),
-            bandVariation
-        );
+    switch(biome)
+    {
+        case 5:
+            float bandVariation = density * 0.3;
+            color = mix(
+                vec4(0.95, 0.8, 0.6, 1.0),
+                vec4(0.9, 0.7, 0.5, 1.0),
+                bandVariation
+            );
 
-    if (density > 0.85) {
-        color = vec4(0.95, 0.3, 0.2, 1.0);
-    }
-    } else if (biome == 6) { // Ammonia
-        color = mix(
-            vec4(0.7, 0.9, 0.4, 1.0),
-            vec4(0.5, 0.8, 0.3, 1.0),
-            density
-        );
-    } else if (biome == 7) { // Volcanic
-        color = mix(
-            vec4(0.3, 0.25, 0.2, 1.0),
-            vec4(0.4, 0.35, 0.3, 1.0),
-            density
-        );
+            if (density > 0.85)
+                color = vec4(0.95, 0.3, 0.2, 1.0);
+
+            break;
+
+        case 6:
+            color = mix(
+                vec4(0.7, 0.9, 0.4, 1.0),
+                vec4(0.5, 0.8, 0.3, 1.0),
+                density
+            );
+            break;
+
+        case 7:
+            color = mix(
+                vec4(0.3, 0.25, 0.2, 1.0),
+                vec4(0.4, 0.35, 0.3, 1.0),
+                density
+            );
+            break;
+
+        default:
+            break;
     }
 
     return color;
@@ -87,9 +107,10 @@ void main()
     }
 
     totalCloudDensity /= float(uCloudLayers);
+    totalCloudDensity *= uCloudDensity;
 
     if (totalCloudDensity < 0.05)
-    discard;
+        discard;
 
     vec4 cloudColor = getCloudColor(uBiomeType, maxDensity);
 
@@ -98,8 +119,11 @@ void main()
 
     if (uBiomeType == 5) diffuse = NdotL * 0.4 + 0.6;
 
+    if (uCloudCastsShadows > 0)
+        diffuse *= (1.0 - uCloudShadowIntensity * (1.0 - NdotL));
+
     cloudColor.rgb *= diffuse;
-    cloudColor.a = totalCloudDensity * 0.8;
+    cloudColor.a = totalCloudDensity;
 
     float edgeFade = pow(max(dot(normal, viewDir), 0.0), 0.5);
     cloudColor.a *= edgeFade;

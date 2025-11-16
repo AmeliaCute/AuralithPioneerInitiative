@@ -13,8 +13,6 @@ public class Config {
     {
         BUILDER.push("Server");
 
-        TRANSITION_COOLDOWN = BUILDER.defineInRange("TransitionCooldown", 500, 500, 1000);
-
         BUILDER.pop();
         SPEC = BUILDER.build();
     }

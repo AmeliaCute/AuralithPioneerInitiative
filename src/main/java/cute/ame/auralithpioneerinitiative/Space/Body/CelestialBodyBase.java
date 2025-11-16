@@ -9,7 +9,7 @@ import org.joml.Matrix4f;
 
 public class CelestialBodyBase
 {
-    private static final double DISTANCE_THRESHOLD = 350.0;
+    protected static final double DISTANCE_THRESHOLD = 350.0;
 
     protected final Vec3 pos;
     protected final float size;
