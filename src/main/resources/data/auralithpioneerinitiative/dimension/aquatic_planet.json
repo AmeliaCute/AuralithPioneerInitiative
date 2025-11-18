@@ -1,0 +1,18 @@
+{
+  "type": "auralithpioneerinitiative:aquatic_planet_type",
+  "generator": {
+    "type": "minecraft:noise",
+    "biome_source": {
+      "type": "auralithpioneerinitiative:y_level",
+      "biomes": [
+        "auralithpioneerinitiative:thermal_springs",
+        "auralithpioneerinitiative:hadal_trench",
+        "auralithpioneerinitiative:abyssal_plains",
+        "auralithpioneerinitiative:midnight_abyss",
+        "auralithpioneerinitiative:twilight_depths",
+        "auralithpioneerinitiative:sunlit_waters"
+      ]
+    },
+    "settings": "auralithpioneerinitiative:aquatic_planet"
+  }
+}

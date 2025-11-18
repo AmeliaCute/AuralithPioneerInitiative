@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "auralithpioneerinitiative:block/ice_ii_stone"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cross",
+  "textures": {
+    "cross": "auralithpioneerinitiative:block/thermal_kelp_plant"
+  }
+}
