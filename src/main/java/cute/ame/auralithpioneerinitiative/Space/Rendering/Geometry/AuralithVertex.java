@@ -9,7 +9,8 @@ public record AuralithVertex(
         Vector3f color,
         Vector2f uv,
         int faceIndex
-) {
+)
+{
     public AuralithVertex(Vector3f position, Vector3f normal, Vector3f color) {
         this(position, normal, color, new Vector2f(0, 0), 0);
     }

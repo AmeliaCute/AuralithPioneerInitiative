@@ -25,7 +25,7 @@ public class AuralithClient
     public static void onRender(RenderLevelStageEvent event)
     {
         if(CELESTE == null) CELESTE = new CelestialSystem();
-        if(event.getStage() == RenderLevelStageEvent.Stage.AFTER_ENTITIES && event.getCamera().getEntity().level().dimension().location().getPath().equals("space"))
+        if(event.getStage() == RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS && event.getCamera().getEntity().level().dimension().location().getPath().equals("space"))
             CELESTE.render(event.getPoseStack(), event.getCamera());
     }
 }

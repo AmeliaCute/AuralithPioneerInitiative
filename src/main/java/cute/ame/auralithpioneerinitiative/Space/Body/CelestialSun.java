@@ -15,8 +15,8 @@ public class CelestialSun extends CelestialBodyBase {
 
     protected Vector3f coreColor;
     protected Vector3f glowColor;
-    protected float glowIntensity = 1.2f;
-    protected int glowLayers = 8;
+    protected float glowIntensity = 1.5f;
+    protected int glowLayers = 32;
     protected float pulseSpeed = 0.3f;
     protected float pulseAmount = 0.08f;
 
@@ -63,11 +63,13 @@ public class CelestialSun extends CelestialBodyBase {
         float time = (float)(System.currentTimeMillis() / 1000.0);
         float pulse = 1.0f + (float)Math.sin(time * pulseSpeed) * pulseAmount;
 
-        for (int i = glowLayers; i > 0; i--) {
-            float t = (float)i / glowLayers;
-            float layerScale = 1.0f + t * 1.2f;
-            float layerOpacity = (1.0f - t * t) * glowIntensity * 0.15f;
+        for (int i = glowLayers; i > 0; i--)
+        {
+            float t = (float)i / (glowLayers + 1);
+            float layerScale = 1.0f + t * 0.2f;
+            float opacityFalloff = 1.0f - t;
 
+            float layerOpacity = opacityFalloff * glowIntensity * 0.15f;
             renderGlowLayer(poseStack, layerScale * pulse, layerOpacity, t);
         }
 
@@ -95,11 +97,11 @@ public class CelestialSun extends CelestialBodyBase {
         for (AuralithTriangle tri : coreMesh.triangles) {
             Vector3f color = new Vector3f(coreColor).mul(1.5f);
 
-            buffer.addVertex(matrix, tri.v1.position().x, tri.v1.position().y, tri.v1.position().z)
+            buffer.addVertex(matrix, tri.v1().position().x, tri.v1().position().y, tri.v1().position().z)
                     .setColor(Math.min(color.x, 1.0f), Math.min(color.y, 1.0f), Math.min(color.z, 1.0f), 1.0f);
-            buffer.addVertex(matrix, tri.v2.position().x, tri.v2.position().y, tri.v2.position().z)
+            buffer.addVertex(matrix, tri.v2().position().x, tri.v2().position().y, tri.v2().position().z)
                     .setColor(Math.min(color.x, 1.0f), Math.min(color.y, 1.0f), Math.min(color.z, 1.0f), 1.0f);
-            buffer.addVertex(matrix, tri.v3.position().x, tri.v3.position().y, tri.v3.position().z)
+            buffer.addVertex(matrix, tri.v3().position().x, tri.v3().position().y, tri.v3().position().z)
                     .setColor(Math.min(color.x, 1.0f), Math.min(color.y, 1.0f), Math.min(color.z, 1.0f), 1.0f);
         }
 
@@ -118,7 +120,8 @@ public class CelestialSun extends CelestialBodyBase {
         poseStack.scale(scale, scale, scale);
 
         Matrix4f matrix = poseStack.last().pose();
-        BufferBuilder buffer = Tesselator.getInstance().begin(
+        Tesselator tesselator = Tesselator.getInstance();
+        BufferBuilder buffer = tesselator.begin(
                 VertexFormat.Mode.TRIANGLES,
                 DefaultVertexFormat.POSITION_COLOR
         );
@@ -126,18 +129,16 @@ public class CelestialSun extends CelestialBodyBase {
         Vector3f color = new Vector3f(coreColor).lerp(glowColor, t);
 
         for (AuralithTriangle tri : coreMesh.triangles) {
-            buffer.addVertex(matrix, tri.v1.position().x, tri.v1.position().y, tri.v1.position().z)
+            buffer.addVertex(matrix, tri.v1().position().x, tri.v1().position().y, tri.v1().position().z)
                     .setColor(color.x, color.y, color.z, opacity);
-            buffer.addVertex(matrix, tri.v2.position().x, tri.v2.position().y, tri.v2.position().z)
+            buffer.addVertex(matrix, tri.v2().position().x, tri.v2().position().y, tri.v2().position().z)
                     .setColor(color.x, color.y, color.z, opacity);
-            buffer.addVertex(matrix, tri.v3.position().x, tri.v3.position().y, tri.v3.position().z)
+            buffer.addVertex(matrix, tri.v3().position().x, tri.v3().position().y, tri.v3().position().z)
                     .setColor(color.x, color.y, color.z, opacity);
         }
 
-        MeshData meshData = buffer.build();
-        if (meshData != null) {
-            BufferUploader.drawWithShader(meshData);
-        }
+        MeshData meshData = buffer.buildOrThrow();
+        BufferUploader.drawWithShader(meshData);
 
         poseStack.popPose();
     }
@@ -155,11 +156,16 @@ public class CelestialSun extends CelestialBodyBase {
     }
 
     public void setGlowLayers(int layers) {
-        this.glowLayers = Math.max(1, Math.min(15, layers));
+        this.glowLayers = Math.max(1, Math.min(64, layers));
     }
 
     public void setPulse(float speed, float amount) {
         this.pulseSpeed = speed;
         this.pulseAmount = amount;
+    }
+
+    // For PBR lighting system
+    public Vector3f getLightColor() {
+        return new Vector3f(coreColor);
     }
 }

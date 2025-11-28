@@ -5,26 +5,16 @@ import org.joml.Vector3f;
 
 public class GeometryGenerator
 {
-    public static AuralithMesh generateCubeWithUVs(float size, int subdivisions) {
+    public static AuralithMesh generateCubeWithUVs(float size, int subdivisions) 
+    {
         AuralithMesh mesh = new AuralithMesh();
 
         Vector3f[][] faceVertices = {
-                // Front (Z-) - Face 0
                 { new Vector3f(-1, -1, -1), new Vector3f( 1, -1, -1), new Vector3f( 1,  1, -1), new Vector3f(-1,  1, -1) },
-
-                // Back (Z+) - Face 1
                 { new Vector3f( 1, -1,  1), new Vector3f(-1, -1,  1), new Vector3f(-1,  1,  1), new Vector3f( 1,  1,  1) },
-
-                // Top (Y+) - Face 2
                 { new Vector3f(-1,  1, -1), new Vector3f( 1,  1, -1), new Vector3f( 1,  1,  1), new Vector3f(-1,  1,  1) },
-
-                // Bottom (Y-) - Face 3
                 { new Vector3f(-1, -1,  1), new Vector3f( 1, -1,  1), new Vector3f( 1, -1, -1), new Vector3f(-1, -1, -1) },
-
-                // Right (X+) - Face 4
                 { new Vector3f( 1, -1, -1), new Vector3f( 1, -1,  1), new Vector3f( 1,  1,  1), new Vector3f( 1,  1, -1) },
-
-                // Left (X-) - Face 5
                 { new Vector3f(-1, -1,  1), new Vector3f(-1, -1, -1), new Vector3f(-1,  1, -1), new Vector3f(-1,  1,  1) }
         };
 
@@ -37,20 +27,19 @@ public class GeometryGenerator
                 new Vector3f(-1,  0,  0)  // Left
         };
 
-        for (int faceIdx = 0; faceIdx < 6; faceIdx++) {
-            subdivideQuadWithUVs(mesh, faceVertices[faceIdx], faceNormals[faceIdx],
-                    size, subdivisions, faceIdx);
-        }
+        for (int faceIdx = 0; faceIdx < 6; ++faceIdx)
+            subdivideQuadWithUVs(mesh, faceVertices[faceIdx], faceNormals[faceIdx], size, subdivisions, faceIdx);
 
         return mesh;
     }
 
-    private static void subdivideQuadWithUVs(AuralithMesh mesh, Vector3f[] corners, Vector3f normal,
-                                             float size, int subdivisions, int faceIndex) {
+    private static void subdivideQuadWithUVs(AuralithMesh mesh, Vector3f[] corners, Vector3f normal, float size, int subdivisions, int faceIndex) 
+    {
         float step = 1.0f / subdivisions;
-
-        for (int i = 0; i < subdivisions; i++) {
-            for (int j = 0; j < subdivisions; j++) {
+        for (int i = 0; i < subdivisions; ++i) 
+        {
+            for (int j = 0; j < subdivisions; ++j) 
+            {
                 float u1 = i * step;
                 float v1 = j * step;
                 float u2 = (i + 1) * step;
@@ -83,37 +72,41 @@ public class GeometryGenerator
         }
     }
 
-    public static AuralithMesh generateCube(float size, int subdivisions, boolean flatShading) {
+    public static AuralithMesh generateCube(float size, int subdivisions, boolean flatShading)
+    {
         AuralithMesh mesh = new AuralithMesh();
-
         Vector3f[][] faceVertices = {
                 {new Vector3f(-1, -1, -1), new Vector3f(1, -1, -1), new Vector3f(1, 1, -1), new Vector3f(-1, 1, -1)},
                 {new Vector3f(1, -1, 1), new Vector3f(-1, -1, 1), new Vector3f(-1, 1, 1), new Vector3f(1, 1, 1)},
                 {new Vector3f(-1, 1, -1), new Vector3f(1, 1, -1), new Vector3f(1, 1, 1), new Vector3f(-1, 1, 1)},
-                {new Vector3f(-1, -1, 1), new Vector3f(1, -1, 1), new Vector3f(1, -1, -1), new Vector3f(-1, -1, -1)},
+                {new Vector3f(-1, -1, -1), new Vector3f(-1, -1, 1), new Vector3f(1, -1, 1), new Vector3f(1, -1, -1)},
                 {new Vector3f(1, -1, -1), new Vector3f(1, -1, 1), new Vector3f(1, 1, 1), new Vector3f(1, 1, -1)},
                 {new Vector3f(-1, -1, 1), new Vector3f(-1, -1, -1), new Vector3f(-1, 1, -1), new Vector3f(-1, 1, 1)}
         };
 
         Vector3f[] faceNormals = {
-                new Vector3f(0, 0, -1), new Vector3f(0, 0, 1),
-                new Vector3f(0, 1, 0), new Vector3f(0, -1, 0),
-                new Vector3f(1, 0, 0), new Vector3f(-1, 0, 0)
+                new Vector3f(0, 0, -1), // Front
+                new Vector3f(0, 0, 1),  // Back
+                new Vector3f(0, 1, 0),  // Top
+                new Vector3f(0, -1, 0), // Bottom
+                new Vector3f(1, 0, 0),  // Right
+                new Vector3f(-1, 0, 0)  // Left
         };
 
-        for (int faceIdx = 0; faceIdx < 6; faceIdx++) {
+        for (int faceIdx = 0; faceIdx < 6; ++faceIdx)
             subdivideQuad(mesh, faceVertices[faceIdx], faceNormals[faceIdx], size, subdivisions, flatShading);
-        }
 
         return mesh;
     }
 
-    private static void subdivideQuad(AuralithMesh mesh, Vector3f[] corners, Vector3f normal,
-                                      float size, int subdivisions, boolean flatShading) {
+    private static void subdivideQuad(AuralithMesh mesh, Vector3f[] corners, Vector3f normal, float size, int subdivisions, boolean flatShading)
+    {
         float step = 1.0f / subdivisions;
 
-        for (int i = 0; i < subdivisions; i++) {
-            for (int j = 0; j < subdivisions; j++) {
+        for (int i = 0; i < subdivisions; ++i)
+        {
+            for (int j = 0; j < subdivisions; ++j)
+            {
                 float u1 = i * step;
                 float v1 = j * step;
                 float u2 = (i + 1) * step;
@@ -126,7 +119,8 @@ public class GeometryGenerator
 
                 Vector3f white = new Vector3f(1, 1, 1);
 
-                if (flatShading) {
+                if (flatShading)
+                {
                     mesh.AddTriangle(new AuralithTriangle(
                             new AuralithVertex(p1, new Vector3f(normal), white),
                             new AuralithVertex(p2, new Vector3f(normal), white),
@@ -137,7 +131,8 @@ public class GeometryGenerator
                             new AuralithVertex(p3, new Vector3f(normal), white),
                             new AuralithVertex(p4, new Vector3f(normal), white)
                     ));
-                } else {
+                } else
+                {
                     mesh.AddTriangle(new AuralithTriangle(
                             new AuralithVertex(p1, new Vector3f(p1).normalize(), white),
                             new AuralithVertex(p2, new Vector3f(p2).normalize(), white),
@@ -153,8 +148,8 @@ public class GeometryGenerator
         }
     }
 
-    public static AuralithMesh generateSphere(float radius, int subdivisions) {
-        // ... existing sphere code ...
+    public static AuralithMesh generateSphere(float radius, int subdivisions)
+    {
         AuralithMesh mesh = new AuralithMesh();
         float t = (1.0f + (float)Math.sqrt(5.0f)) / 2.0f;
         Vector3f[] vertices = {
@@ -171,18 +166,16 @@ public class GeometryGenerator
                 {3, 9, 4}, {3, 4, 2}, {3, 2, 6}, {3, 6, 8}, {3, 8, 9},
                 {4, 9, 5}, {2, 4, 11}, {6, 2, 10}, {8, 6, 7}, {9, 8, 1}
         };
-        for (int[] face : faces) {
-            subdivideTriangle(mesh,
-                    new Vector3f(vertices[face[0]]).mul(radius),
-                    new Vector3f(vertices[face[1]]).mul(radius),
-                    new Vector3f(vertices[face[2]]).mul(radius),
-                    radius, subdivisions);
-        }
+        for (int[] face : faces)
+            subdivideTriangle(mesh, new Vector3f(vertices[face[0]]).mul(radius), new Vector3f(vertices[face[1]]).mul(radius), new Vector3f(vertices[face[2]]).mul(radius),radius, subdivisions);
+
         return mesh;
     }
 
-    private static void subdivideTriangle(AuralithMesh mesh, Vector3f v1, Vector3f v2, Vector3f v3, float radius, int depth) {
-        if (depth == 0) {
+    private static void subdivideTriangle(AuralithMesh mesh, Vector3f v1, Vector3f v2, Vector3f v3, float radius, int depth)
+    {
+        if (depth == 0)
+        {
             Vector3f white = new Vector3f(1, 1, 1);
             mesh.AddTriangle(new AuralithTriangle(
                     new AuralithVertex(new Vector3f(v1), new Vector3f(v1).normalize(), white),
@@ -191,6 +184,7 @@ public class GeometryGenerator
             ));
             return;
         }
+
         Vector3f v12 = new Vector3f(v1).add(v2).mul(0.5f).normalize().mul(radius);
         Vector3f v23 = new Vector3f(v2).add(v3).mul(0.5f).normalize().mul(radius);
         Vector3f v31 = new Vector3f(v3).add(v1).mul(0.5f).normalize().mul(radius);
@@ -200,9 +194,10 @@ public class GeometryGenerator
         subdivideTriangle(mesh, v12, v23, v31, radius, depth - 1);
     }
 
-    private static Vector3f biLerp(Vector3f[] corners, float u, float v) {
-        Vector3f bottom = new Vector3f(corners[0]).lerp(corners[1], u); // BL -> BR
-        Vector3f top    = new Vector3f(corners[3]).lerp(corners[2], u); // TL -> TR
-        return bottom.lerp(top, v); // bottom -> top
+    private static Vector3f biLerp(Vector3f[] corners, float u, float v)
+    {
+        Vector3f bottom = new Vector3f(corners[0]).lerp(corners[1], u);
+        Vector3f top    = new Vector3f(corners[3]).lerp(corners[2], u);
+        return bottom.lerp(top, v);
     }
 }
