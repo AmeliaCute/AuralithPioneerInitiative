@@ -11,7 +11,6 @@ import org.joml.Vector3f;
 import java.util.ArrayList;
 import java.util.List;
 
-
 public class CelestialSystem
 {
     private final List<CelestialBodyBase> objets = new ArrayList<>();
@@ -37,6 +36,15 @@ public class CelestialSystem
                 0.7f
         );
         objets.add(planet);
+
+        CelestialPlanet planetShadowTest = new CelestialPlanet(
+                new Vec3(-400, 300, 400),
+                40,
+                new Vector3f(0.3f, 0.5f, 0.8f),
+                0.0f,
+                0.7f
+        );
+        objets.add(planetShadowTest);
 
 
         updateLightSources();

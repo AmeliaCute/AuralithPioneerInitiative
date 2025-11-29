@@ -17,7 +17,8 @@ import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PBRRenderer {
+public class PBRRenderer
+{
     private static PBRRenderer instance;
     private PBRShaderProgram shader;
     private boolean initialized = false;
@@ -36,7 +37,8 @@ public class PBRRenderer {
     {        
         if (initialized) return;
 
-        try {
+        try
+        {
             shader = new PBRShaderProgram();
             shader.createVertexShader(PBRShaders.VERTEX_SHADER);
             shader.createFragmentShader(PBRShaders.FRAGMENT_SHADER);

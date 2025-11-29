@@ -47,67 +47,74 @@ public class PBRShaders
             
             const float PI = 3.14159265359;
             
-            vec3 fresnelSchlick(float cosTheta, vec3 F0) {
-                return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+            float calculateShadow(vec3 fragPos, vec3 planetCenter, vec3 lightPos) 
+            {
+                vec3 toPlanet = fragPos - planetCenter;
+                float distFromCenter = length(toPlanet);
+                vec3 planetDir = toPlanet / distFromCenter;
+                
+                vec3 toLightFromCenter = lightPos - planetCenter;
+                float lightDist = length(toLightFromCenter);
+                vec3 lightDir = toLightFromCenter / lightDist;
+                
+                float alignment = dot(planetDir, lightDir);
+                
+                float terminator = smoothstep(-0.15, 0.15, alignment);
+                
+                float occlusion = 1.0;
+                if (alignment < 0.0) 
+                {
+                    vec3 toLight = lightPos - fragPos;
+                    float distToLight = length(toLight);
+                    vec3 rayDir = toLight / distToLight;
+                    
+                    vec3 rayToPlanetCenter = planetCenter - fragPos;
+                    float projectionOnRay = dot(rayToPlanetCenter, rayDir);
+                    
+                    if (projectionOnRay > 0.0 && projectionOnRay < distToLight) 
+                    {
+                        vec3 closestPoint = fragPos + rayDir * projectionOnRay;
+                        float distToCenter = length(closestPoint - planetCenter);
+                        
+                        float shadowRadius = distFromCenter * 0.85;
+                        occlusion = smoothstep(shadowRadius * 0.7, shadowRadius * 1.2, distToCenter);
+                    }
+                }
+                
+                return terminator * occlusion;
             }
             
-            float distributionGGX(vec3 N, vec3 H, float roughness) {
-                float a = roughness * roughness;
-                float a2 = a * a;
-                float NdotH = max(dot(N, H), 0.0);
-                float NdotH2 = NdotH * NdotH;
-                float nom = a2;
-                float denom = (NdotH2 * (a2 - 1.0) + 1.0);
-                denom = PI * denom * denom;
-                return nom / max(denom, 0.0000001);
-            }
-            
-            float geometrySchlickGGX(float NdotV, float roughness) {
-                float r = (roughness + 1.0);
-                float k = (r * r) / 8.0;
-                float nom = NdotV;
-                float denom = NdotV * (1.0 - k) + k;
-                return nom / max(denom, 0.0000001);
-            }
-            
-            float geometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {
-                float NdotV = max(dot(N, V), 0.0);
-                float NdotL = max(dot(N, L), 0.0);
-                float ggx2 = geometrySchlickGGX(NdotV, roughness);
-                float ggx1 = geometrySchlickGGX(NdotL, roughness);
-                return ggx1 * ggx2;
-            }
-            
-            void main() {
+            void main() 
+            {
                 vec3 N = normalize(FragNormal);
                 vec3 V = normalize(uCameraPos - FragPos);
-                vec3 F0 = vec3(0.04);
-                F0 = mix(F0, uAlbedo, uMetallic);
                 vec3 L = normalize(uLightPos - FragPos);
-                vec3 H = normalize(V + L);
+                float NdotL = max(dot(N, L), 0.0);
+                
+                NdotL = clamp(NdotL, 0.3, 1.0);
+                NdotL = 0.5 + (NdotL - 0.3) * 0.714;
                 float distance = length(uLightPos - FragPos);
                 float attenuation = 1.0 / (distance * distance * 0.00001 + 1.0);
-                vec3 radiance = uLightColor * attenuation * 50.0;
-                float NDF = distributionGGX(N, H, uRoughness);
-                float G = geometrySmith(N, V, L, uRoughness);
-                vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
-                vec3 numerator = NDF * G * F;
-                float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
-                vec3 specular = numerator / denominator;
-                vec3 kS = F;
-                vec3 kD = vec3(1.0) - kS;
-                kD *= 1.0 - uMetallic;
-                float NdotL = max(dot(N, L), 0.0);
-                float shadow = 1.0;
-                vec3 lightDir = normalize(uLightPos - uPlanetCenter);
-                vec3 posFromCenter = normalize(FragPos - uPlanetCenter);
-                float lightSide = dot(posFromCenter, lightDir);
-                shadow = smoothstep(-0.2, 0.2, lightSide);
-                vec3 Lo = (kD * uAlbedo / PI + specular) * radiance * NdotL * shadow;
-                vec3 ambient = vec3(0.02) * uAlbedo * uAO;
-                vec3 color = ambient + Lo;
+                
+                float shadow = calculateShadow(FragPos, uPlanetCenter, uLightPos);
+                vec3 diffuse = uAlbedo * uLightColor * attenuation * NdotL * shadow * 15.0;
+                float ambientStrength = 0.08 + (1.0 - shadow) * 0.03;
+                vec3 ambient = vec3(ambientStrength) * uAlbedo * uAO;
+                vec3 absLocal = abs(normalize(LocalPos));
+                
+                float maxAxis = max(max(absLocal.x, absLocal.y), absLocal.z);
+                vec3 edgeDist = vec3(1.0) - absLocal / maxAxis;
+                float minEdgeDist = min(min(edgeDist.x, edgeDist.y), edgeDist.z);
+                
+                float rimStrength = 0.18;
+                float rimFalloff = 0.3;
+                float rim = smoothstep(rimFalloff, 0.0, minEdgeDist);
+                
+                vec3 rimLight = rim * uAlbedo * rimStrength * smoothstep(0.1, 0.7, shadow);
+                vec3 color = ambient + diffuse + rimLight;
                 color = color / (color + vec3(1.0));
                 color = pow(color, vec3(1.0/2.2));
+                
                 FragColor = vec4(color, 1.0);
             }
             """;
