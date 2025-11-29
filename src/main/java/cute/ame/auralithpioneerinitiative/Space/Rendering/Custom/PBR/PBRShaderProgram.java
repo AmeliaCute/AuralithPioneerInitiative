@@ -5,6 +5,7 @@ import org.joml.Vector3f;
 import org.lwjgl.opengl.GL20;
 
 import java.io.IOException;
+import java.util.List;
 
 public class PBRShaderProgram
 {
@@ -24,6 +25,9 @@ public class PBRShaderProgram
     private int uRoughness;
     private int uAO;
     private int uPlanetCenter;
+    private int uNumShadowCasters;
+    private int uShadowCasterPositions;
+    private int uShadowCasterRadii;
 
     public PBRShaderProgram() throws IOException
     {
@@ -85,19 +89,22 @@ public class PBRShaderProgram
         uRoughness = GL20.glGetUniformLocation(programId, "uRoughness");
         uAO = GL20.glGetUniformLocation(programId, "uAO");
         uPlanetCenter = GL20.glGetUniformLocation(programId, "uPlanetCenter");
+        uNumShadowCasters = GL20.glGetUniformLocation(programId, "uNumShadowCasters");
+        uShadowCasterPositions = GL20.glGetUniformLocation(programId, "uShadowCasterPositions");
+        uShadowCasterRadii = GL20.glGetUniformLocation(programId, "uShadowCasterRadii");
     }
 
-    public void bind() 
+    public void bind()
     {
         GL20.glUseProgram(programId);
     }
 
-    public void unbind() 
+    public void unbind()
     {
         GL20.glUseProgram(0);
     }
 
-    public void setModelMatrix(Matrix4f matrix) 
+    public void setModelMatrix(Matrix4f matrix)
     {
         float[] buffer = new float[16];
         matrix.get(buffer);
@@ -105,7 +112,7 @@ public class PBRShaderProgram
     }
 
     public void setViewMatrix(Matrix4f matrix)
-{
+    {
         float[] buffer = new float[16];
         matrix.get(buffer);
         GL20.glUniformMatrix4fv(uViewMatrix, false, buffer);
@@ -163,6 +170,28 @@ public class PBRShaderProgram
     public void setPlanetCenter(Vector3f center)
     {
         GL20.glUniform3f(uPlanetCenter, center.x, center.y, center.z);
+    }
+
+    public void setShadowCasters(List<Vector3f> positions, List<Float> radii)
+    {
+        //TODO: Make it dynamic OR Put it at 256, but maybe probably cause issue with buffer
+        int count = Math.min(positions.size(), 10);
+        GL20.glUniform1i(uNumShadowCasters, count);
+
+        float[] posArray = new float[count * 3];
+        float[] radiiArray = new float[count];
+
+        for (int i = 0; i < count; i++)
+        {
+            Vector3f pos = positions.get(i);
+            posArray[i * 3] = pos.x;
+            posArray[i * 3 + 1] = pos.y;
+            posArray[i * 3 + 2] = pos.z;
+            radiiArray[i] = radii.get(i);
+        }
+
+        GL20.glUniform3fv(uShadowCasterPositions, posArray);
+        GL20.glUniform1fv(uShadowCasterRadii, radiiArray);
     }
 
     public void cleanup()

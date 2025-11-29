@@ -26,15 +26,15 @@ public class PBRRenderer
     private PBRRenderer() {}
 
     public static PBRRenderer getInstance()
-    {        
+    {
         if (instance == null)
             instance = new PBRRenderer();
-        
+
         return instance;
     }
 
     public void init()
-    {        
+    {
         if (initialized) return;
 
         try
@@ -46,14 +46,17 @@ public class PBRRenderer
             initialized = true;
             System.out.println("PBR Shader initialized successfully!");
         } catch (IOException e)
-        {            
+        {
             System.err.println("Failed to initialize PBR shader:");
             e.printStackTrace();
         }
     }
 
-    public void renderMesh(AuralithMesh mesh, PoseStack poseStack, Camera camera, Vector3f lightPos, Vector3f lightColor, Vector3f albedo, float metallic, float roughness, float ao, Vector3f planetCenter)
-    {        
+    public void renderMesh(AuralithMesh mesh, PoseStack poseStack, Camera camera,
+                           Vector3f lightPos, Vector3f lightColor, Vector3f albedo,
+                           float metallic, float roughness, float ao, Vector3f planetCenter,
+                           List<Vector3f> shadowCasterPositions, List<Float> shadowCasterRadii)
+    {
         if (!initialized)
             init();
 
@@ -65,7 +68,7 @@ public class PBRRenderer
 
         List<Float> vertices = new ArrayList<>();
         for (AuralithTriangle tri : mesh.triangles)
-        {            
+        {
             vertices.add(tri.v1().position().x);
             vertices.add(tri.v1().position().y);
             vertices.add(tri.v1().position().z);
@@ -90,7 +93,7 @@ public class PBRRenderer
 
         float[] vertexArray = new float[vertices.size()];
         for (int i = 0; i < vertices.size(); ++i)
-           vertexArray[i] = vertices.get(i);
+            vertexArray[i] = vertices.get(i);
 
         FloatBuffer vertexBuffer = org.lwjgl.BufferUtils.createFloatBuffer(vertexArray.length);
         vertexBuffer.put(vertexArray);
@@ -129,6 +132,7 @@ public class PBRRenderer
         shader.setRoughness(roughness);
         shader.setAO(ao);
         shader.setPlanetCenter(planetCenter);
+        shader.setShadowCasters(shadowCasterPositions, shadowCasterRadii);
 
         GL11.glDrawArrays(GL11.GL_TRIANGLES, 0, mesh.triangles.size() * 3);
 
@@ -139,7 +143,7 @@ public class PBRRenderer
     }
 
     public void cleanup()
-    {        
+    {
         if (shader != null)
             shader.cleanup();
     }

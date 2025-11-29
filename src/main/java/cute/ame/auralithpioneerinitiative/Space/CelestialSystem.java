@@ -39,23 +39,44 @@ public class CelestialSystem
 
         CelestialPlanet planetShadowTest = new CelestialPlanet(
                 new Vec3(-400, 300, 400),
-                40,
+                90,
                 new Vector3f(0.3f, 0.5f, 0.8f),
                 0.0f,
                 0.7f
         );
         objets.add(planetShadowTest);
 
-
         updateLightSources();
+        updateShadowCasters();
     }
 
     public void updateLightSources()
     {
         if(primarySun == null) return;
 
-        for(var gay : objets)
-            gay.setLightSourcePos(primarySun.getPos());
+        for(var body : objets)
+            body.setLightSourcePos(primarySun.getPos());
+    }
+
+    public void updateShadowCasters()
+    {
+        for(var body : objets)
+        {
+            if(body instanceof CelestialPlanet planet)
+            {
+                List<CelestialBodyBase> casters = new ArrayList<>();
+
+                for(var otherBody : objets)
+                {
+                    if(otherBody != body)
+                    {
+                        casters.add(otherBody);
+                    }
+                }
+
+                planet.setShadowCasters(casters);
+            }
+        }
     }
 
     public void render(PoseStack poseStack, Camera camera)
@@ -64,8 +85,7 @@ public class CelestialSystem
             primarySun.render(poseStack, camera);
         }
 
-        for(var gay : objets)
-            gay.render(poseStack, camera);
-
+        for(var body : objets)
+            body.render(poseStack, camera);
     }
 }

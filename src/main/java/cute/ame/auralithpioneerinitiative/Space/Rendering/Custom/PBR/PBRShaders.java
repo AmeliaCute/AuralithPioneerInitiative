@@ -45,9 +45,13 @@ public class PBRShaders
             uniform float uAO;
             uniform vec3 uPlanetCenter;
             
+            uniform int uNumShadowCasters;
+            uniform vec3 uShadowCasterPositions[10];
+            uniform float uShadowCasterRadii[10];
+            
             const float PI = 3.14159265359;
             
-            float calculateShadow(vec3 fragPos, vec3 planetCenter, vec3 lightPos) 
+            float calculateSelfShadow(vec3 fragPos, vec3 planetCenter, vec3 lightPos) 
             {
                 vec3 toPlanet = fragPos - planetCenter;
                 float distFromCenter = length(toPlanet);
@@ -84,6 +88,44 @@ public class PBRShaders
                 return terminator * occlusion;
             }
             
+            float calculateInterPlanetShadow(vec3 fragPos, vec3 lightPos)
+            {
+                vec3 toLight = lightPos - fragPos;
+                float distToLight = length(toLight);
+                vec3 lightDir = toLight / distToLight;
+                float shadow = 1.0;
+                
+                for (int i = 0; i < uNumShadowCasters; i++)
+                {
+                    vec3 casterCenter = uShadowCasterPositions[i];
+                    float casterSize = uShadowCasterRadii[i];
+                    
+                    float distToCaster = length(casterCenter - fragPos);
+                    vec3 toCaster = casterCenter - fragPos;
+                    float projectionOnRay = dot(toCaster, lightDir);
+                    
+                    if (projectionOnRay > 0.0 && projectionOnRay < distToLight)
+                    {
+                        vec3 closestPoint = fragPos + lightDir * projectionOnRay;
+                        vec3 offsetFromCenter = closestPoint - casterCenter;
+                        
+                        vec3 absOffset = abs(offsetFromCenter);
+                        float boxDist = max(max(absOffset.x, absOffset.y), absOffset.z);
+                        
+                        if (boxDist < casterSize)
+                        {
+                            float distanceRatio = projectionOnRay / distToLight;
+                            float penumbraSize = casterSize * (0.02 + distanceRatio * 0.08);
+                            
+                            float shadowAmount = smoothstep(casterSize - penumbraSize, casterSize + penumbraSize * 0.5, boxDist);
+                            shadow *= mix(0.05, 1.0, shadowAmount);
+                        }
+                    }
+                }
+                
+                return shadow;
+            }
+            
             void main() 
             {
                 vec3 N = normalize(FragNormal);
@@ -96,8 +138,11 @@ public class PBRShaders
                 float distance = length(uLightPos - FragPos);
                 float attenuation = 1.0 / (distance * distance * 0.00001 + 1.0);
                 
-                float shadow = calculateShadow(FragPos, uPlanetCenter, uLightPos);
+                float selfShadow = calculateSelfShadow(FragPos, uPlanetCenter, uLightPos);
+                float interPlanetShadow = calculateInterPlanetShadow(FragPos, uLightPos);
+                float shadow = selfShadow * interPlanetShadow;
                 vec3 diffuse = uAlbedo * uLightColor * attenuation * NdotL * shadow * 15.0;
+                
                 float ambientStrength = 0.08 + (1.0 - shadow) * 0.03;
                 vec3 ambient = vec3(ambientStrength) * uAlbedo * uAO;
                 vec3 absLocal = abs(normalize(LocalPos));
@@ -105,7 +150,6 @@ public class PBRShaders
                 float maxAxis = max(max(absLocal.x, absLocal.y), absLocal.z);
                 vec3 edgeDist = vec3(1.0) - absLocal / maxAxis;
                 float minEdgeDist = min(min(edgeDist.x, edgeDist.y), edgeDist.z);
-                
                 float rimStrength = 0.18;
                 float rimFalloff = 0.3;
                 float rim = smoothstep(rimFalloff, 0.0, minEdgeDist);

@@ -9,6 +9,9 @@ import net.minecraft.client.Camera;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class CelestialPlanet extends CelestialBodyBase {
 
     protected Vector3f albedo;
@@ -19,6 +22,9 @@ public class CelestialPlanet extends CelestialBodyBase {
     protected int subdivisions;
     protected float rotationSpeed;
     protected float rotationOffset;
+
+    // For shadow casting
+    protected List<CelestialBodyBase> shadowCasters = new ArrayList<>();
 
     public CelestialPlanet(Vec3 pos, float size, Vector3f albedo, float metallic, float roughness) {
         super(pos, size);
@@ -34,6 +40,10 @@ public class CelestialPlanet extends CelestialBodyBase {
 
     protected void generateMesh() {
         mesh = GeometryGenerator.generateCube(size, subdivisions, false);
+    }
+
+    public void setShadowCasters(List<CelestialBodyBase> casters) {
+        this.shadowCasters = casters;
     }
 
     @Override
@@ -68,11 +78,31 @@ public class CelestialPlanet extends CelestialBodyBase {
                 (float)(pos.z - cameraPos.z)
         );
 
+        // Prepare shadow caster data (convert to camera-relative space)
+        List<Vector3f> shadowCasterPositions = new ArrayList<>();
+        List<Float> shadowCasterRadii = new ArrayList<>();
+
+        for (CelestialBodyBase caster : shadowCasters) {
+            // Don't cast shadow on yourself
+            if (caster == this) continue;
+
+            Vec3 casterPos = caster.getPos();
+            Vector3f casterPosRelative = new Vector3f(
+                    (float)(casterPos.x - cameraPos.x),
+                    (float)(casterPos.y - cameraPos.y),
+                    (float)(casterPos.z - cameraPos.z)
+            );
+
+            shadowCasterPositions.add(casterPosRelative);
+            shadowCasterRadii.add(caster.size);
+        }
+
         PBRRenderer.getInstance().renderMesh(
                 mesh, poseStack, camera,
                 lightPos, lightColor,
                 albedo, metallic, roughness, ambientOcclusion,
-                planetCenter
+                planetCenter,
+                shadowCasterPositions, shadowCasterRadii
         );
 
         RenderSystem.disableBlend();
