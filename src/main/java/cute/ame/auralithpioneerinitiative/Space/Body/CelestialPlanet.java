@@ -23,7 +23,6 @@ public class CelestialPlanet extends CelestialBodyBase {
     protected float rotationSpeed;
     protected float rotationOffset;
 
-    // For shadow casting
     protected List<CelestialBodyBase> shadowCasters = new ArrayList<>();
 
     public CelestialPlanet(Vec3 pos, float size, Vector3f albedo, float metallic, float roughness) {
@@ -47,20 +46,15 @@ public class CelestialPlanet extends CelestialBodyBase {
     }
 
     @Override
-    public void render(PoseStack poseStack, Camera camera) {
+    protected void renderBody(PoseStack poseStack, Camera camera, double relX, double relY, double relZ) {
         poseStack.pushPose();
-
-        Vec3 cameraPos = camera.getPosition();
-        double relX = this.pos.x - cameraPos.x;
-        double relY = this.pos.y - cameraPos.y;
-        double relZ = this.pos.z - cameraPos.z;
-
-        poseStack.translate(relX, relY, relZ);
 
         RenderSystem.enableDepthTest();
         RenderSystem.disableCull();
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
+
+        Vec3 cameraPos = camera.getPosition();
 
         Vector3f lightPos = lightSourcePos != null ?
                 new Vector3f(
@@ -78,13 +72,11 @@ public class CelestialPlanet extends CelestialBodyBase {
                 (float)(pos.z - cameraPos.z)
         );
 
-        // Prepare shadow caster data (convert to camera-relative space)
         List<Vector3f> shadowCasterPositions = new ArrayList<>();
         List<Float> shadowCasterRadii = new ArrayList<>();
 
         for (CelestialBodyBase caster : shadowCasters) {
-            // Don't cast shadow on yourself
-            if (caster == this) continue;
+            if (caster == this || caster.emitLight()) continue;
 
             Vec3 casterPos = caster.getPos();
             Vector3f casterPosRelative = new Vector3f(

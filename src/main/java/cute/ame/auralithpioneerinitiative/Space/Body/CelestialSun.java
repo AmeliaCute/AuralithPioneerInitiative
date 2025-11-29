@@ -22,7 +22,8 @@ public class CelestialSun extends CelestialBodyBase {
 
     protected AuralithMesh coreMesh;
 
-    public CelestialSun(Vec3 pos, float size) {
+    public CelestialSun(Vec3 pos, float size)
+    {
         this(pos, size,
                 new Vector3f(1.0f, 0.85f, 0.6f),
                 new Vector3f(1.0f, 0.6f, 0.3f));
@@ -45,15 +46,8 @@ public class CelestialSun extends CelestialBodyBase {
     }
 
     @Override
-    public void render(PoseStack poseStack, Camera camera) {
+    protected void renderBody(PoseStack poseStack, Camera camera, double relX, double relY, double relZ) {
         poseStack.pushPose();
-
-        Vec3 cameraPos = camera.getPosition();
-        double relX = this.pos.x - cameraPos.x;
-        double relY = this.pos.y - cameraPos.y;
-        double relZ = this.pos.z - cameraPos.z;
-
-        poseStack.translate(relX, relY, relZ);
 
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
@@ -94,7 +88,8 @@ public class CelestialSun extends CelestialBodyBase {
                 DefaultVertexFormat.POSITION_COLOR
         );
 
-        for (AuralithTriangle tri : coreMesh.triangles) {
+        for (AuralithTriangle tri : coreMesh.triangles)
+        {
             Vector3f color = new Vector3f(coreColor).mul(1.5f);
 
             buffer.addVertex(matrix, tri.v1().position().x, tri.v1().position().y, tri.v1().position().z)
@@ -164,7 +159,6 @@ public class CelestialSun extends CelestialBodyBase {
         this.pulseAmount = amount;
     }
 
-    // For PBR lighting system
     public Vector3f getLightColor() {
         return new Vector3f(coreColor);
     }
