@@ -20,8 +20,8 @@ public class CelestialSystem
     public CelestialSystem()
     {
         primarySun = new CelestialSun(
-                new Vec3(0, 300, 0),
-                40,
+                new Vec3(0, 500, 0),
+                1000,
                 new Vector3f(1.0f, 0.85f, 0.6f),
                 new Vector3f(1.0f, 0.6f, 0.3f)
         );
@@ -31,21 +31,21 @@ public class CelestialSystem
         objets.add(primarySun);
 
         CelestialPlanet planet = new CelestialPlanet(
-                new Vec3(0, 300, 200),
-                40,
+                new Vec3(0, 300, 5000),
+                400,
                 new Vector3f(0.3f, 0.5f, 0.8f),
                 0.0f,
-                0.7f
+                0.0f
         );
 
         objets.add(planet);
 
         CelestialPlanet planetShadowTest = new CelestialPlanet(
-                new Vec3(-400, 300, 400),
-                90,
+                new Vec3(-7000, 300, 8000),
+                500,
                 new Vector3f(0.8f, 0.4f, 0.3f),
                 0.0f,
-                0.6f
+                0.0f
         );
 
         objets.add(planetShadowTest);

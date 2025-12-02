@@ -60,7 +60,7 @@ public class CelestialSun extends CelestialBodyBase {
         for (int i = glowLayers; i > 0; i--)
         {
             float t = (float)i / (glowLayers + 1);
-            float layerScale = 1.0f + t * 0.2f;
+            float layerScale = 1.0f + t * 0.4f;
             float opacityFalloff = 1.0f - t;
 
             float layerOpacity = opacityFalloff * glowIntensity * 0.15f;

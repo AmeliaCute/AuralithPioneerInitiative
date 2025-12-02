@@ -6,6 +6,7 @@
   "mixins": [
   ],
   "client": [
+    "Rendering.PlanetRendering.GameRendererMixin",
   ],
   "injectors": {
     "defaultRequire": 1
