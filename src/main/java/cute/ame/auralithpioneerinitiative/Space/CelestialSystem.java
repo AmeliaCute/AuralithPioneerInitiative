@@ -4,7 +4,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import cute.ame.auralithpioneerinitiative.Space.Body.CelestialBodyBase;
 import cute.ame.auralithpioneerinitiative.Space.Body.CelestialPlanet;
 import cute.ame.auralithpioneerinitiative.Space.Body.CelestialSun;
-import cute.ame.auralithpioneerinitiative.Space.Body.Component.Impl.AtmosphereComponent;
 import net.minecraft.client.Camera;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
@@ -32,20 +31,13 @@ public class CelestialSystem
         objets.add(primarySun);
 
         CelestialPlanet planet = new CelestialPlanet(
-                new Vec3(-200, 300, 200),
+                new Vec3(0, 300, 200),
                 40,
                 new Vector3f(0.3f, 0.5f, 0.8f),
                 0.0f,
                 0.7f
         );
 
-        AtmosphereComponent atmosphere = new AtmosphereComponent(
-                new Vector3f(0.4f, 0.6f, 0.9f),
-                0.6f,
-                0.8f,
-                12
-        );
-        planet.addComponent(atmosphere);
         objets.add(planet);
 
         CelestialPlanet planetShadowTest = new CelestialPlanet(
@@ -55,14 +47,6 @@ public class CelestialSystem
                 0.0f,
                 0.6f
         );
-
-        AtmosphereComponent toxicAtmosphere = new AtmosphereComponent(
-                new Vector3f(0.5f, 0.8f, 0.3f),
-                0.4f,
-                1.0f,
-                16
-        );
-        planetShadowTest.addComponent(toxicAtmosphere);
 
         objets.add(planetShadowTest);
 

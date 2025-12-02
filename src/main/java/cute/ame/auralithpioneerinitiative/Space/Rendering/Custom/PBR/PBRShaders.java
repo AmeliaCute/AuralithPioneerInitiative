@@ -51,41 +51,20 @@ public class PBRShaders
             
             const float PI = 3.14159265359;
             
-            float calculateSelfShadow(vec3 fragPos, vec3 planetCenter, vec3 lightPos) 
+            float calculateSelfShadow(vec3 fragPos, vec3 planetCenter, vec3 lightPos, vec3 normal)
             {
-                vec3 toPlanet = fragPos - planetCenter;
-                float distFromCenter = length(toPlanet);
-                vec3 planetDir = toPlanet / distFromCenter;
+                // For cubes with smooth shading, keep it simple
+                // The main lighting is already handled by NdotL
+                vec3 toLightDir = normalize(lightPos - fragPos);
+                float facing = dot(normal, toLightDir);
                 
-                vec3 toLightFromCenter = lightPos - planetCenter;
-                float lightDist = length(toLightFromCenter);
-                vec3 lightDir = toLightFromCenter / lightDist;
-                
-                float alignment = dot(planetDir, lightDir);
-                
-                float terminator = smoothstep(-0.15, 0.15, alignment);
-                
-                float occlusion = 1.0;
-                if (alignment < 0.0) 
-                {
-                    vec3 toLight = lightPos - fragPos;
-                    float distToLight = length(toLight);
-                    vec3 rayDir = toLight / distToLight;
-                    
-                    vec3 rayToPlanetCenter = planetCenter - fragPos;
-                    float projectionOnRay = dot(rayToPlanetCenter, rayDir);
-                    
-                    if (projectionOnRay > 0.0 && projectionOnRay < distToLight) 
-                    {
-                        vec3 closestPoint = fragPos + rayDir * projectionOnRay;
-                        float distToCenter = length(closestPoint - planetCenter);
-                        
-                        float shadowRadius = distFromCenter * 0.85;
-                        occlusion = smoothstep(shadowRadius * 0.7, shadowRadius * 1.2, distToCenter);
-                    }
+                // Very subtle darkening for back faces only
+                // Most of the shading comes from the standard diffuse term
+                if (facing < -0.2) {
+                    return smoothstep(-1.0, -0.2, facing) * 0.5 + 0.1;
                 }
                 
-                return terminator * occlusion;
+                return 1.0;
             }
             
             float calculateInterPlanetShadow(vec3 fragPos, vec3 lightPos)
@@ -131,31 +110,33 @@ public class PBRShaders
                 vec3 N = normalize(FragNormal);
                 vec3 V = normalize(uCameraPos - FragPos);
                 vec3 L = normalize(uLightPos - FragPos);
-                float NdotL = max(dot(N, L), 0.0);
                 
-                NdotL = clamp(NdotL, 0.3, 1.0);
-                NdotL = 0.5 + (NdotL - 0.3) * 0.714;
-                float distance = length(uLightPos - FragPos);
-                float attenuation = 1.0 / (distance * distance * 0.00001 + 1.0);
+                float NdotL = dot(N, L);
+                float wrap = 0.75;
+                float wrappedDiffuse = max(0.0, (NdotL + wrap) / (1.0 + wrap));
                 
-                float selfShadow = calculateSelfShadow(FragPos, uPlanetCenter, uLightPos);
+                wrappedDiffuse = pow(wrappedDiffuse, 0.8);
+                
+                float selfShadow = calculateSelfShadow(FragPos, uPlanetCenter, uLightPos, N);
                 float interPlanetShadow = calculateInterPlanetShadow(FragPos, uLightPos);
                 float shadow = selfShadow * interPlanetShadow;
-                vec3 diffuse = uAlbedo * uLightColor * attenuation * NdotL * shadow * 15.0;
                 
-                float ambientStrength = 0.08 + (1.0 - shadow) * 0.03;
+                float distance = length(uLightPos - FragPos);
+                float attenuation = 1.0 / (distance * distance * 0.00001 + 1.0);
+                vec3 diffuse = uAlbedo * uLightColor * attenuation * wrappedDiffuse * shadow * 12.0;
+                float ambientStrength = 0.02;
                 vec3 ambient = vec3(ambientStrength) * uAlbedo * uAO;
-                vec3 absLocal = abs(normalize(LocalPos));
                 
-                float maxAxis = max(max(absLocal.x, absLocal.y), absLocal.z);
-                vec3 edgeDist = vec3(1.0) - absLocal / maxAxis;
-                float minEdgeDist = min(min(edgeDist.x, edgeDist.y), edgeDist.z);
-                float rimStrength = 0.18;
-                float rimFalloff = 0.3;
-                float rim = smoothstep(rimFalloff, 0.0, minEdgeDist);
+                vec3 H = normalize(L + V);
+                float specular = pow(max(dot(N, H), 0.0), 48.0);
+                vec3 specularLight = specular * uLightColor * shadow * 6.0;
+                float wideSpec = pow(max(dot(N, H), 0.0), 8.0);
+                specularLight += wideSpec * uLightColor * shadow * 3.0;
                 
-                vec3 rimLight = rim * uAlbedo * rimStrength * smoothstep(0.1, 0.7, shadow);
-                vec3 color = ambient + diffuse + rimLight;
+                float rimFresnel = pow(1.0 - max(dot(N, V), 0.0), 2.5);
+                vec3 rimLight = rimFresnel * uLightColor * 0.25 * max(NdotL, 0.0) * shadow;
+                vec3 color = ambient + diffuse + specularLight + rimLight;
+                
                 color = color / (color + vec3(1.0));
                 color = pow(color, vec3(1.0/2.2));
                 
