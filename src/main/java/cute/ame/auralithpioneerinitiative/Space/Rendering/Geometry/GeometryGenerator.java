@@ -5,7 +5,7 @@ import org.joml.Vector3f;
 
 public class GeometryGenerator
 {
-    public static AuralithMesh generateCubeWithUVs(float size, int subdivisions) 
+    public static AuralithMesh generateCubeWithUVs(float size, int subdivisions)
     {
         AuralithMesh mesh = new AuralithMesh();
 
@@ -33,12 +33,12 @@ public class GeometryGenerator
         return mesh;
     }
 
-    private static void subdivideQuadWithUVs(AuralithMesh mesh, Vector3f[] corners, Vector3f normal, float size, int subdivisions, int faceIndex) 
+    private static void subdivideQuadWithUVs(AuralithMesh mesh, Vector3f[] corners, Vector3f normal, float size, int subdivisions, int faceIndex)
     {
         float step = 1.0f / subdivisions;
-        for (int i = 0; i < subdivisions; ++i) 
+        for (int i = 0; i < subdivisions; ++i)
         {
-            for (int j = 0; j < subdivisions; ++j) 
+            for (int j = 0; j < subdivisions; ++j)
             {
                 float u1 = i * step;
                 float v1 = j * step;
@@ -58,15 +58,15 @@ public class GeometryGenerator
                 Vector3f white = new Vector3f(1, 1, 1);
 
                 mesh.AddTriangle(new AuralithTriangle(
-                        new AuralithVertex(p1, new Vector3f(normal), white, uv1, faceIndex),
-                        new AuralithVertex(p2, new Vector3f(normal), white, uv2, faceIndex),
-                        new AuralithVertex(p3, new Vector3f(normal), white, uv3, faceIndex)
+                        new AuralithVertex(p1, new Vector3f(normal), white, uv1, faceIndex, new Vector3f(p1)),
+                        new AuralithVertex(p2, new Vector3f(normal), white, uv2, faceIndex, new Vector3f(p2)),
+                        new AuralithVertex(p3, new Vector3f(normal), white, uv3, faceIndex, new Vector3f(p3))
                 ));
 
                 mesh.AddTriangle(new AuralithTriangle(
-                        new AuralithVertex(p1, new Vector3f(normal), white, uv1, faceIndex),
-                        new AuralithVertex(p3, new Vector3f(normal), white, uv3, faceIndex),
-                        new AuralithVertex(p4, new Vector3f(normal), white, uv4, faceIndex)
+                        new AuralithVertex(p1, new Vector3f(normal), white, uv1, faceIndex, new Vector3f(p1)),
+                        new AuralithVertex(p3, new Vector3f(normal), white, uv3, faceIndex, new Vector3f(p3)),
+                        new AuralithVertex(p4, new Vector3f(normal), white, uv4, faceIndex, new Vector3f(p4))
                 ));
             }
         }
@@ -117,31 +117,36 @@ public class GeometryGenerator
                 Vector3f p3 = biLerp(corners, u2, v2).mul(size);
                 Vector3f p4 = biLerp(corners, u1, v2).mul(size);
 
+                Vector3f local1 = new Vector3f(p1);
+                Vector3f local2 = new Vector3f(p2);
+                Vector3f local3 = new Vector3f(p3);
+                Vector3f local4 = new Vector3f(p4);
+
                 Vector3f white = new Vector3f(1, 1, 1);
 
                 if (flatShading)
                 {
                     mesh.AddTriangle(new AuralithTriangle(
-                            new AuralithVertex(p1, new Vector3f(normal), white),
-                            new AuralithVertex(p2, new Vector3f(normal), white),
-                            new AuralithVertex(p3, new Vector3f(normal), white)
+                            new AuralithVertex(p1, new Vector3f(normal), white, new Vector2f(0, 0), 0, local1),
+                            new AuralithVertex(p2, new Vector3f(normal), white, new Vector2f(0, 0), 0, local2),
+                            new AuralithVertex(p3, new Vector3f(normal), white, new Vector2f(0, 0), 0, local3)
                     ));
                     mesh.AddTriangle(new AuralithTriangle(
-                            new AuralithVertex(p1, new Vector3f(normal), white),
-                            new AuralithVertex(p3, new Vector3f(normal), white),
-                            new AuralithVertex(p4, new Vector3f(normal), white)
+                            new AuralithVertex(p1, new Vector3f(normal), white, new Vector2f(0, 0), 0, local1),
+                            new AuralithVertex(p3, new Vector3f(normal), white, new Vector2f(0, 0), 0, local3),
+                            new AuralithVertex(p4, new Vector3f(normal), white, new Vector2f(0, 0), 0, local4)
                     ));
                 } else
                 {
                     mesh.AddTriangle(new AuralithTriangle(
-                            new AuralithVertex(p1, new Vector3f(p1).normalize(), white),
-                            new AuralithVertex(p2, new Vector3f(p2).normalize(), white),
-                            new AuralithVertex(p3, new Vector3f(p3).normalize(), white)
+                            new AuralithVertex(p1, new Vector3f(p1).normalize(), white, new Vector2f(0, 0), 0, local1),
+                            new AuralithVertex(p2, new Vector3f(p2).normalize(), white, new Vector2f(0, 0), 0, local2),
+                            new AuralithVertex(p3, new Vector3f(p3).normalize(), white, new Vector2f(0, 0), 0, local3)
                     ));
                     mesh.AddTriangle(new AuralithTriangle(
-                            new AuralithVertex(p1, new Vector3f(p1).normalize(), white),
-                            new AuralithVertex(p3, new Vector3f(p3).normalize(), white),
-                            new AuralithVertex(p4, new Vector3f(p4).normalize(), white)
+                            new AuralithVertex(p1, new Vector3f(p1).normalize(), white, new Vector2f(0, 0), 0, local1),
+                            new AuralithVertex(p3, new Vector3f(p3).normalize(), white, new Vector2f(0, 0), 0, local3),
+                            new AuralithVertex(p4, new Vector3f(p4).normalize(), white, new Vector2f(0, 0), 0, local4)
                     ));
                 }
             }
@@ -178,9 +183,9 @@ public class GeometryGenerator
         {
             Vector3f white = new Vector3f(1, 1, 1);
             mesh.AddTriangle(new AuralithTriangle(
-                    new AuralithVertex(new Vector3f(v1), new Vector3f(v1).normalize(), white),
-                    new AuralithVertex(new Vector3f(v2), new Vector3f(v2).normalize(), white),
-                    new AuralithVertex(new Vector3f(v3), new Vector3f(v3).normalize(), white)
+                    new AuralithVertex(new Vector3f(v1), new Vector3f(v1).normalize(), white, new Vector2f(0, 0), 0, new Vector3f(v1)),
+                    new AuralithVertex(new Vector3f(v2), new Vector3f(v2).normalize(), white, new Vector2f(0, 0), 0, new Vector3f(v2)),
+                    new AuralithVertex(new Vector3f(v3), new Vector3f(v3).normalize(), white, new Vector2f(0, 0), 0, new Vector3f(v3))
             ));
             return;
         }
