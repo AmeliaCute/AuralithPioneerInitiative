@@ -1,5 +1,7 @@
 package cute.ame.auralithpioneerinitiative.Space.Rendering.Custom.PBR;
 
+import cute.ame.auralithpioneerinitiative.Space.Rendering.RenderingConstants;
+
 public class PBRShaders {
 
     public static final String VERTEX_SHADER = """
@@ -45,19 +47,19 @@ public class PBRShaders {
             uniform vec3 uPlanetCenter;
             
             uniform int uNumShadowCasters;
-            uniform vec3 uShadowCasterPositions[10];
-            uniform float uShadowCasterRadii[10];
+            uniform vec3 uShadowCasterPositions[%d];
+            uniform float uShadowCasterRadii[%d];
             
             uniform int uNumDynamicPointLights;
-            uniform vec3 uDynamicPointLightPositions[16];
-            uniform vec3 uDynamicPointLightColors[16];
-            uniform vec4 uDynamicPointLightParams[16]; // brightness, range, linear, quadratic
+            uniform vec3 uDynamicPointLightPositions[%d];
+            uniform vec3 uDynamicPointLightColors[%d];
+            uniform vec4 uDynamicPointLightParams[%d]; // brightness, range, linear, quadratic
             
             uniform int uNumDynamicSpotlights;
-            uniform vec3 uDynamicSpotlightPositions[16];
-            uniform vec3 uDynamicSpotlightDirections[16];
-            uniform vec3 uDynamicSpotlightColors[16];
-            uniform vec4 uDynamicSpotlightParams[16]; // brightness, range, innerCone, outerCone
+            uniform vec3 uDynamicSpotlightPositions[%d];
+            uniform vec3 uDynamicSpotlightDirections[%d];
+            uniform vec3 uDynamicSpotlightColors[%d];
+            uniform vec4 uDynamicSpotlightParams[%d]; // brightness, range, innerCone, outerCone
             
             const float PI = 3.14159265359;
             
@@ -131,7 +133,7 @@ public class PBRShaders {
                 vec3 lightDir = toLight / distToLight;
                 float shadow = 1.0;
                 
-                for (int i = 0; i < uNumShadowCasters; i++) 
+                for (int i = 0; i < uNumShadowCasters; ++i) 
                 {
                     vec3 casterCenter = uShadowCasterPositions[i];
                     float casterRadius = uShadowCasterRadii[i];
@@ -254,10 +256,10 @@ public class PBRShaders {
                 vec3 sunRadiance = calculatePBRLight(N, V, L, uLightColor, shadow * attenuation, F0);
                 vec3 dynamicRadiance = vec3(0.0);
                 
-                for (int i = 0; i < uNumDynamicPointLights && i < 16; i++)
+                for (int i = 0; i < uNumDynamicPointLights && i < 16; ++i)
                     dynamicRadiance += calculateDynamicPointLight(i, N, V, F0);
                 
-                for (int i = 0; i < uNumDynamicSpotlights && i < 16; i++)
+                for (int i = 0; i < uNumDynamicSpotlights && i < 16; ++i)
                     dynamicRadiance += calculateDynamicSpotlight(i, N, V, F0);
 
                 vec3 absLocalPos = abs(LocalPos);
@@ -265,7 +267,7 @@ public class PBRShaders {
                 float cubeEdgeDistance = maxAxis / length(LocalPos);
                 float cubicAmbient = pow(cubeEdgeDistance, 2.0);
                 
-                float ambientStrength = 0.01;
+                float ambientStrength = 0.005;
                 vec3 ambient = vec3(ambientStrength) * uAlbedo * uAO * cubicAmbient;
                 
                 vec3 color = ambient + sunRadiance + dynamicRadiance;
@@ -275,5 +277,15 @@ public class PBRShaders {
                 
                 FragColor = vec4(color, 1.0);
             }
-            """;
+            """.formatted(
+                RenderingConstants.MAX_SHADOW_CASTERS,
+                RenderingConstants.MAX_SHADOW_CASTERS,
+                RenderingConstants.MAX_POINT_LIGHTS,
+                RenderingConstants.MAX_POINT_LIGHTS,
+                RenderingConstants.MAX_POINT_LIGHTS,
+                RenderingConstants.MAX_SPOTLIGHTS,
+                RenderingConstants.MAX_SPOTLIGHTS,
+                RenderingConstants.MAX_SPOTLIGHTS,
+                RenderingConstants.MAX_SPOTLIGHTS
+            );
 }

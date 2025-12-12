@@ -13,13 +13,7 @@ public class SpaceDimensionEffect extends DimensionSpecialEffects
 
     public SpaceDimensionEffect()
     {
-        super(
-                Float.NaN,
-                false,
-                SkyType.NONE,
-                false,
-                false
-        );
+        super(Float.NaN, false, SkyType.NONE, false, false);
     }
 
     @Override
