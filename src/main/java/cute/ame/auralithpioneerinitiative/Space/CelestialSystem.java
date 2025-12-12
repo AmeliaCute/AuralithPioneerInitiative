@@ -50,8 +50,8 @@ public class CelestialSystem
         objets.add(planetShadowTest);
 
         CelestialBlackHole blueBlackHole = new CelestialBlackHole(
-                new Vec3(-15000, 300, 5000),
-                30,
+                new Vec3(-5000, 300, 0),
+                3,
                 new Vector3f(100, 150, 255),
                 0.3f,
                 180f,
