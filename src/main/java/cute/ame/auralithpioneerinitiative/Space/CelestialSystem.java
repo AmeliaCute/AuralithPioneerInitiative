@@ -1,6 +1,7 @@
 package cute.ame.auralithpioneerinitiative.Space;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import cute.ame.auralithpioneerinitiative.Space.Body.CelestialBlackHole;
 import cute.ame.auralithpioneerinitiative.Space.Body.CelestialBodyBase;
 import cute.ame.auralithpioneerinitiative.Space.Body.CelestialPlanet;
 import cute.ame.auralithpioneerinitiative.Space.Body.CelestialSun;
@@ -37,7 +38,6 @@ public class CelestialSystem
                 0.0f,
                 0.0f
         );
-
         objets.add(planet);
 
         CelestialPlanet planetShadowTest = new CelestialPlanet(
@@ -47,8 +47,19 @@ public class CelestialSystem
                 0.0f,
                 0.0f
         );
-
         objets.add(planetShadowTest);
+
+        CelestialBlackHole blueBlackHole = new CelestialBlackHole(
+                new Vec3(-15000, 300, 5000),
+                30,
+                new Vector3f(100, 150, 255),
+                0.3f,
+                180f,
+                25f,
+                1.0f,
+                100000f
+        );
+        objets.add(blueBlackHole);
 
         updateLightSources();
         updateShadowCasters();
