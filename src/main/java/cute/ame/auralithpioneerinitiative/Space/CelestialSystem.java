@@ -25,7 +25,7 @@ public class CelestialSystem
                 new Vector3f(1.0f, 0.85f, 0.6f),
                 new Vector3f(1.0f, 0.6f, 0.3f)
         );
-        primarySun.setGlowIntensity(1.2f);
+        primarySun.setGlowIntensity(2f);
         primarySun.setGlowLayers(32);
         primarySun.setPulse(0.3f, 0.08f);
         objets.add(primarySun);
@@ -58,28 +58,19 @@ public class CelestialSystem
     {
         if(primarySun == null) return;
 
-        for(var body : objets)
-            body.setLightSourcePos(primarySun.getPos());
+        for(var body : objets) body.setLightSourcePos(primarySun.getPos());
     }
 
     public void updateShadowCasters()
     {
         for(var body : objets)
+        if(body instanceof CelestialPlanet planet)
         {
-            if(body instanceof CelestialPlanet planet)
-            {
-                List<CelestialBodyBase> casters = new ArrayList<>();
+            List<CelestialBodyBase> casters = new ArrayList<>();
 
-                for(var otherBody : objets)
-                {
-                    if(otherBody != body)
-                    {
-                        casters.add(otherBody);
-                    }
-                }
+            for(var otherBody : objets) if(otherBody != body) casters.add(otherBody);
 
-                planet.setShadowCasters(casters);
-            }
+            planet.setShadowCasters(casters);
         }
     }
 

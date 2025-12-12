@@ -1,7 +1,6 @@
 package cute.ame.auralithpioneerinitiative.Space.Rendering.Custom.PBR;
 
-public class PBRShaders
-{
+public class PBRShaders {
 
     public static final String VERTEX_SHADER = """
             #version 150 core
@@ -49,13 +48,64 @@ public class PBRShaders
             uniform vec3 uShadowCasterPositions[10];
             uniform float uShadowCasterRadii[10];
             
+            uniform int uNumDynamicPointLights;
+            uniform vec3 uDynamicPointLightPositions[16];
+            uniform vec3 uDynamicPointLightColors[16];
+            uniform vec4 uDynamicPointLightParams[16]; // brightness, range, linear, quadratic
+            
+            uniform int uNumDynamicSpotlights;
+            uniform vec3 uDynamicSpotlightPositions[16];
+            uniform vec3 uDynamicSpotlightDirections[16];
+            uniform vec3 uDynamicSpotlightColors[16];
+            uniform vec4 uDynamicSpotlightParams[16]; // brightness, range, innerCone, outerCone
+            
             const float PI = 3.14159265359;
             
-            float calculateSmoothTerminator(vec3 normal, vec3 lightDir, vec3 localPos)
+            float DistributionGGX(vec3 N, vec3 H, float roughness)
+            {
+                float a = roughness * roughness;
+                float a2 = a * a;
+                float NdotH = max(dot(N, H), 0.0);
+                float NdotH2 = NdotH * NdotH;
+            
+                float nom = a2;
+                float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+                denom = PI * denom * denom;
+            
+                return nom / max(denom, 0.0001);
+            }
+            
+            float GeometrySchlickGGX(float NdotV, float roughness) 
+            {
+                float r = (roughness + 1.0);
+                float k = (r * r) / 8.0;
+                
+                float nom = NdotV;
+                float denom = NdotV * (1.0 - k) + k;
+                
+                return nom / max(denom, 0.0001);
+            }
+            
+            float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness) 
+            {
+                float NdotV = max(dot(N, V), 0.0);
+                float NdotL = max(dot(N, L), 0.0);
+                float ggx2 = GeometrySchlickGGX(NdotV, roughness);
+                float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+                
+                return ggx1 * ggx2;
+            }
+            
+            vec3 fresnelSchlick(float cosTheta, vec3 F0) 
+            {
+                return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+            }
+            
+            float calculateSmoothTerminator(vec3 normal, vec3 lightDir, vec3 localPos) 
             {
                 vec3 sphericalNormal = normalize(localPos);
                 float NdotL = dot(sphericalNormal, lightDir);
-            
+                
                 vec3 centerToFragment = normalize(localPos);
                 vec3 absLightDir = abs(lightDir);
                 float maxComponent = max(max(absLightDir.x, absLightDir.y), absLightDir.z);
@@ -63,118 +113,166 @@ public class PBRShaders
                 float straightness = (maxComponent - minComponent);
                 float terminatorThreshold = mix(-0.4, -0.9, straightness);
                 float adjustedNdotL = NdotL - terminatorThreshold;
-            
+                
                 float terminatorSoftness = 0.6;
                 float wrapped = (adjustedNdotL + terminatorSoftness) / (1.0 + terminatorSoftness);
                 wrapped = clamp(wrapped, 0.0, 1.0);
-            
+                
                 float darkness = smoothstep(0.0, 1.0, wrapped);
                 darkness = pow(darkness, 12.0);
-            
+                
                 return darkness;
             }
             
-            float calculateSubsurfaceScattering(vec3 normal, vec3 lightDir, vec3 viewDir)
-            {
-                float NdotL = dot(normal, lightDir);
-                vec3 H = normalize(lightDir + normal * 0.5);
-                float scatter = pow(clamp(dot(viewDir, -H), 0.0, 1.0), 4.0);
-            
-                float darkSide = clamp(-NdotL, 0.0, 1.0);
-                return scatter * darkSide * 0.15;
-            }
-            
-            float calculateInterPlanetShadow(vec3 fragPos, vec3 lightPos)
+            float calculateInterPlanetShadow(vec3 fragPos, vec3 lightPos) 
             {
                 vec3 toLight = lightPos - fragPos;
                 float distToLight = length(toLight);
                 vec3 lightDir = toLight / distToLight;
                 float shadow = 1.0;
-            
-                for (int i = 0; i < uNumShadowCasters; i++)
+                
+                for (int i = 0; i < uNumShadowCasters; i++) 
                 {
                     vec3 casterCenter = uShadowCasterPositions[i];
                     float casterRadius = uShadowCasterRadii[i];
-            
+                    
                     vec3 toCaster = casterCenter - fragPos;
                     float distToCaster = length(toCaster);
                     float projectionOnRay = dot(toCaster, lightDir);
-            
-                    if (projectionOnRay > 0.0 && projectionOnRay < distToLight)
+                    
+                    if (projectionOnRay > 0.0 && projectionOnRay < distToLight) 
                     {
                         vec3 closestPoint = fragPos + lightDir * projectionOnRay;
                         vec3 offsetFromCenter = closestPoint - casterCenter;
                         vec3 absOffset = abs(offsetFromCenter);
                         float boxDist = max(max(absOffset.x, absOffset.y), absOffset.z);
-            
-                        if (boxDist < casterRadius * 2.0)
+                        
+                        if (boxDist < casterRadius * 2.0) 
                         {
                             float distanceRatio = projectionOnRay / distToLight;
                             float penumbraSize = casterRadius * (0.5 + distanceRatio * 0.8);
-            
-                            float shadowAmount = smoothstep(casterRadius - penumbraSize,\s
-                                                           casterRadius + penumbraSize,\s
-                                                           boxDist);
+                            
+                            float shadowAmount = smoothstep(casterRadius - penumbraSize,  casterRadius + penumbraSize,  boxDist);
                             float coreShadow = smoothstep(casterRadius * 0.5, casterRadius, boxDist);
                             shadowAmount = mix(coreShadow * 0.05, shadowAmount, 0.6);
                             shadow *= mix(0.01, 1.0, shadowAmount);
-                        }  \s
+                        }
                     }
                 }
-            
+                
                 return shadow;
             }
             
-            float calculateAtmosphericRim(vec3 normal, vec3 viewDir, float NdotL)
+            vec3 calculatePBRLight(vec3 N, vec3 V, vec3 L, vec3 lightColor, float lightIntensity, vec3 F0) 
             {
-                float rim = 1.0 - max(dot(normal, viewDir), 0.0);
-                rim = pow(rim, 3.0);
-            
-                float litRim = rim * max(NdotL, 0.0);
-                return litRim * 0.3;
+                vec3 H = normalize(V + L);
+                
+                float NDF = DistributionGGX(N, H, uRoughness);
+                float G = GeometrySmith(N, V, L, uRoughness);
+                vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
+                
+                vec3 numerator = NDF * G * F;
+                float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
+                vec3 specular = numerator / denominator;
+                
+                vec3 kS = F;
+                vec3 kD = vec3(1.0) - kS;
+                kD *= 1.0 - uMetallic;
+                
+                float NdotL = max(dot(N, L), 0.0);
+                return (kD * uAlbedo / PI + specular) * lightColor * lightIntensity * NdotL;
             }
             
-            void main()
+            vec3 calculateDynamicPointLight(int index, vec3 N, vec3 V, vec3 F0) 
             {
+                vec3 lightPos = uDynamicPointLightPositions[index];
+                vec3 lightColor = uDynamicPointLightColors[index];
+                float brightness = uDynamicPointLightParams[index].x;
+                float range = uDynamicPointLightParams[index].y;
+                float linear = uDynamicPointLightParams[index].z;
+                float quadratic = uDynamicPointLightParams[index].w;
+                
+                vec3 L = lightPos - FragPos;
+                float distance = length(L);
+                if (distance > range) return vec3(0.0);
+                
+                L = normalize(L);
+                float attenuation = 1.0 / (1.0 + linear * distance + quadratic * (distance * distance));
+                float terminator = calculateSmoothTerminator(N, L, LocalPos);
+                vec3 radiance = calculatePBRLight(N, V, L, lightColor, brightness * attenuation * terminator, F0);
+                
+                return radiance;
+            }
+            
+            vec3 calculateDynamicSpotlight(int index, vec3 N, vec3 V, vec3 F0) 
+            {
+                vec3 lightPos = uDynamicSpotlightPositions[index];
+                vec3 lightDir = normalize(uDynamicSpotlightDirections[index]);
+                vec3 lightColor = uDynamicSpotlightColors[index];
+                float brightness = uDynamicSpotlightParams[index].x;
+                float range = uDynamicSpotlightParams[index].y;
+                float innerCone = uDynamicSpotlightParams[index].z;
+                float outerCone = uDynamicSpotlightParams[index].w;
+                
+                vec3 L = lightPos - FragPos;
+                float distance = length(L);
+                if (distance > range) return vec3(0.0);
+                
+                L = normalize(L);
+                float theta = dot(L, normalize(-lightDir));
+                if (theta <= outerCone) return vec3(0.0);
+                
+                float epsilon = innerCone - outerCone;
+                float intensity = clamp(pow((theta - outerCone) / epsilon, 3.0), 0.0, 1.0);
+                float distanceFactor = 1.0 - clamp(distance / range, 0.0, 1.0);
+                
+                float terminator = calculateSmoothTerminator(N, L, LocalPos);
+                vec3 radiance = calculatePBRLight(N, V, L, lightColor,  brightness * intensity * distanceFactor * terminator, F0);
+                return radiance;
+            }
+            
+            void main() {
                 vec3 N = normalize(FragNormal);
                 vec3 V = normalize(uCameraPos - FragPos);
+                
+                vec3 F0 = vec3(0.04);
+                F0 = mix(F0, uAlbedo, uMetallic);
+                
                 vec3 L = normalize(uLightPos - FragPos);
-            
+                
                 float terminator = calculateSmoothTerminator(N, L, LocalPos);
                 float interPlanetShadow = calculateInterPlanetShadow(FragPos, uLightPos);
                 float shadow = terminator * interPlanetShadow;
+                
                 float distance = length(uLightPos - FragPos);
                 float referenceDistance = 5000.0;
                 float minDistance = 1000.0;
                 float effectiveDistance = max(distance, minDistance);
-            
                 float attenuation = (referenceDistance * referenceDistance) / (effectiveDistance * effectiveDistance);
                 attenuation = clamp(attenuation, 0.05, 2.0);
-            
-                vec3 diffuse = uAlbedo * uLightColor * shadow * attenuation;
-            
+                
+                vec3 sunRadiance = calculatePBRLight(N, V, L, uLightColor, shadow * attenuation, F0);
+                vec3 dynamicRadiance = vec3(0.0);
+                
+                for (int i = 0; i < uNumDynamicPointLights && i < 16; i++)
+                    dynamicRadiance += calculateDynamicPointLight(i, N, V, F0);
+                
+                for (int i = 0; i < uNumDynamicSpotlights && i < 16; i++)
+                    dynamicRadiance += calculateDynamicSpotlight(i, N, V, F0);
+
                 vec3 absLocalPos = abs(LocalPos);
                 float maxAxis = max(max(absLocalPos.x, absLocalPos.y), absLocalPos.z);
                 float cubeEdgeDistance = maxAxis / length(LocalPos);
                 float cubicAmbient = pow(cubeEdgeDistance, 2.0);
-            
-                float ambientStrength = 0.0000000025;
-                vec3 ambient = vec3(ambientStrength, ambientStrength, ambientStrength) * uAlbedo * uAO * cubicAmbient;
-            
-                float sss = calculateSubsurfaceScattering(N, L, V) * interPlanetShadow;
-                vec3 subsurface = sss * uAlbedo * uLightColor * attenuation;
-                vec3 H = normalize(L + V);
-                float spec = pow(max(dot(N, H), 0.0), 64.0);
-                vec3 specular = spec * uLightColor * shadow * attenuation * 0.3;
-            
-                float NdotL = dot(N, L);
-                float atmosphericRim = calculateAtmosphericRim(N, V, NdotL);
-                vec3 rimLight = atmosphericRim * uLightColor * interPlanetShadow * attenuation;
-            
-                vec3 color = ambient + diffuse + subsurface + specular + rimLight;
+                
+                float ambientStrength = 0.01;
+                vec3 ambient = vec3(ambientStrength) * uAlbedo * uAO * cubicAmbient;
+                
+                vec3 color = ambient + sunRadiance + dynamicRadiance;
+                
                 color = color / (color + vec3(0.8));
                 color = pow(color, vec3(1.0/2.2));
-            
+                
                 FragColor = vec4(color, 1.0);
             }
             """;
