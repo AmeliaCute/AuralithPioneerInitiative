@@ -97,7 +97,8 @@ public class DynamicLightComponent implements CelestialComponent
     }
 
     @Override
-    public void render(CelestialBodyBase body, PoseStack poseStack, Camera camera, double relX, double relY, double relZ) {
+    public void render(CelestialBodyBase body, PoseStack poseStack, Camera camera, double relX, double relY, double relZ)
+    {
         if (!enabled) return;
 
         Vector3f worldPos = new Vector3f((float) body.getPos().x, (float) body.getPos().y, (float) body.getPos().z);
