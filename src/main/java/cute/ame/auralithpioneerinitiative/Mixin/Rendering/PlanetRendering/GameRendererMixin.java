@@ -16,7 +16,7 @@ public abstract class GameRendererMixin {
     private void onGetProjectionMatrix(double fov, CallbackInfoReturnable<Matrix4f> cir)
     {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.level != null && minecraft.level.dimension().location().getPath().equals("space"))
+        if (minecraft.level != null)
         {
             float aspectRatio = (float) minecraft.getWindow().getWidth() / (float) minecraft.getWindow().getHeight();
             float nearPlane = 0.05f;

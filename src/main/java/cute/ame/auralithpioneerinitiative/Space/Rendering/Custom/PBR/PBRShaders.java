@@ -246,21 +246,12 @@ public class PBRShaders {
                 float interPlanetShadow = calculateInterPlanetShadow(FragPos, uLightPos);
                 float shadow = terminator * interPlanetShadow;
                 
-                float distance = length(uLightPos - FragPos);
-                float referenceDistance = 5000.0;
-                float minDistance = 1000.0;
-                float effectiveDistance = max(distance, minDistance);
-                float attenuation = (referenceDistance * referenceDistance) / (effectiveDistance * effectiveDistance);
-                attenuation = clamp(attenuation, 0.05, 2.0);
-                
-                vec3 sunRadiance = calculatePBRLight(N, V, L, uLightColor, shadow * attenuation, F0);
+                vec3 sunRadiance = calculatePBRLight(N, V, L, uLightColor, shadow, F0);
                 vec3 dynamicRadiance = vec3(0.0);
                 
-                for (int i = 0; i < uNumDynamicPointLights && i < 16; ++i)
-                    dynamicRadiance += calculateDynamicPointLight(i, N, V, F0);
+                for (int i = 0; i < uNumDynamicPointLights && i < 16; ++i) dynamicRadiance += calculateDynamicPointLight(i, N, V, F0);
                 
-                for (int i = 0; i < uNumDynamicSpotlights && i < 16; ++i)
-                    dynamicRadiance += calculateDynamicSpotlight(i, N, V, F0);
+                for (int i = 0; i < uNumDynamicSpotlights && i < 16; ++i) dynamicRadiance += calculateDynamicSpotlight(i, N, V, F0);
 
                 vec3 absLocalPos = abs(LocalPos);
                 float maxAxis = max(max(absLocalPos.x, absLocalPos.y), absLocalPos.z);
