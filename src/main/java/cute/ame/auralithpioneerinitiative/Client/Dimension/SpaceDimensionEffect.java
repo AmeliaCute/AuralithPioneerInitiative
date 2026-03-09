@@ -1,6 +1,6 @@
 package cute.ame.auralithpioneerinitiative.Client.Dimension;
 
-import com.mojang.blaze3d.vertex.*;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.DimensionSpecialEffects;
@@ -35,7 +35,6 @@ public class SpaceDimensionEffect extends DimensionSpecialEffects
     public boolean isFoggyAt(int i, int i1) {
         return false;
     }
-
 
     @Override
     public boolean renderSky(ClientLevel level, int ticks, float partialTick, Matrix4f modelViewMatrix, Camera camera, Matrix4f projectionMatrix, boolean isFoggy, Runnable setupFog) {
