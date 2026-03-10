@@ -10,7 +10,6 @@ import java.util.*;
 
 public final class AuralithAPI
 {
-
     private AuralithAPI() {}
 
     private static final Map<ResourceLocation, SolarSystemDefinition> SYSTEMS = new LinkedHashMap<>();

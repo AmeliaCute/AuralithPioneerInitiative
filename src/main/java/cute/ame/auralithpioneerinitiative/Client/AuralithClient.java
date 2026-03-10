@@ -12,23 +12,24 @@ import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.RegisterDimensionSpecialEffectsEvent;
 
 @EventBusSubscriber(modid = Auralithpioneerinitiative.MODID, value = Dist.CLIENT)
-public final class AuralithClient {
+public final class AuralithClient
+{
 
     private AuralithClient() {}
 
     @SubscribeEvent
     public static void onRegisterReloadListeners(RegisterClientReloadListenersEvent event)
     {
-        event.registerReloadListener(SolarSystemLoader.INSTANCE);
-        event.registerReloadListener(
-            (prepBarrier, resourceManager, prepProfiler, applyProfiler, prepExec, applyExec) ->
-                prepBarrier.wait(null).thenRunAsync(PlanetTextureGenerator::invalidateAll, applyExec)
-        );
+      event.registerReloadListener(SolarSystemLoader.INSTANCE);
+      event.registerReloadListener(
+        (prepBarrier, resourceManager, prepProfiler, applyProfiler, prepExec, applyExec) ->
+          prepBarrier.wait(null).thenRunAsync(PlanetTextureGenerator::invalidateAll, applyExec)
+      );
     }
 
     @SubscribeEvent
     public static void onRegisterDimensionEffects(RegisterDimensionSpecialEffectsEvent event)
     {
-        event.register(ResourceLocation.fromNamespaceAndPath(Auralithpioneerinitiative.MODID, "space"), new SpaceDimensionEffect());
+      event.register(ResourceLocation.fromNamespaceAndPath(Auralithpioneerinitiative.MODID, "space"), new SpaceDimensionEffect());
     }
 }

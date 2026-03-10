@@ -9,11 +9,14 @@ import org.slf4j.Logger;
 
 @Mod(Auralithpioneerinitiative.MODID)
 public class Auralithpioneerinitiative {
+
     public static final String MODID = "auralithpioneerinitiative";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    public Auralithpioneerinitiative(IEventBus modEventBus, ModContainer modContainer)
-    {
+    public Auralithpioneerinitiative(
+        IEventBus modEventBus,
+        ModContainer modContainer
+    ) {
         modContainer.registerConfig(ModConfig.Type.SERVER, Config.SPEC);
     }
 }
