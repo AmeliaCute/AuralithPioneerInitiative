@@ -54,8 +54,8 @@ public final class AtmosphereRenderer
         float baseScale = 1.0f;
         float maxScale = atmo.scale();
         float r = atmo.r(), g = atmo.g(), b = atmo.b();
-        float op = atmo.opacity();
-        int layers = 16;
+        float op = atmo.opacity() * 0.25f;
+        int layers = 4;
 
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         RenderSystem.disableDepthTest();
@@ -63,8 +63,9 @@ public final class AtmosphereRenderer
         RenderSystem.enableBlend();
 
         RenderSystem.blendFuncSeparate(
-                GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE,
-                GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
+            GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE,
+            GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO
+        );
         RenderSystem.enableCull();
         GL11.glCullFace(GL11.GL_FRONT);
 
@@ -87,11 +88,11 @@ public final class AtmosphereRenderer
 
 
             for (int[] quad : FACE_QUAD_CORNERS)
-                for (int ci : quad)
-                {
-                    float[] pos = CORNER_POS[ci];
-                    buf.addVertex(m, pos[0], pos[1], pos[2]).setColor(r, g, b, alpha);
-                }
+            for (int ci : quad)
+            {
+                float[] pos = CORNER_POS[ci];
+                buf.addVertex(m, pos[0], pos[1], pos[2]).setColor(r, g, b, alpha);
+            }
             poseStack.popPose();
         }
 
