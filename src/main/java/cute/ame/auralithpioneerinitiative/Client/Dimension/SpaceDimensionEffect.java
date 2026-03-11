@@ -1,6 +1,8 @@
 package cute.ame.auralithpioneerinitiative.Client.Dimension;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import cute.ame.auralithpioneerinitiative.API.AuralithAPI;
+import cute.ame.auralithpioneerinitiative.Client.Sky.SolarSystemRenderer;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.DimensionSpecialEffects;
@@ -13,12 +15,12 @@ public class SpaceDimensionEffect extends DimensionSpecialEffects
 
     public SpaceDimensionEffect()
     {
-        super(Float.NaN, false, SkyType.NONE, false, false);
+        super(Float.NaN, false, SkyType.NORMAL, false, false);
     }
 
     @Override
     public SkyType skyType() {
-        return SkyType.NONE;
+        return SkyType.NORMAL;
     }
 
     @Override
@@ -28,7 +30,7 @@ public class SpaceDimensionEffect extends DimensionSpecialEffects
 
     @Override
     public @NotNull Vec3 getBrightnessDependentFogColor(@NotNull Vec3 vec3, float v) {
-        return new Vec3(0,0,0);
+        return Vec3.ZERO;
     }
 
     @Override
@@ -37,12 +39,16 @@ public class SpaceDimensionEffect extends DimensionSpecialEffects
     }
 
     @Override
-    public boolean renderSky(ClientLevel level, int ticks, float partialTick, Matrix4f modelViewMatrix, Camera camera, Matrix4f projectionMatrix, boolean isFoggy, Runnable setupFog) {
+    public boolean renderSky(ClientLevel level, int ticks, float partialTick, Matrix4f modelViewMatrix, Camera camera, Matrix4f projectionMatrix, boolean isFoggy, Runnable setupFog)
+    {
+        if (AuralithAPI.hasSkyFor(level.dimension()))
+            SolarSystemRenderer.getInstance().renderSky(modelViewMatrix, projectionMatrix, partialTick, camera, isFoggy, setupFog, level);
         return true;
     }
 
     @Override
-    public boolean renderClouds(ClientLevel level, int ticks, float partialTick, PoseStack poseStack, double camX, double camY, double camZ, Matrix4f modelViewMatrix, Matrix4f projectionMatrix) {
+    public boolean renderClouds(ClientLevel level, int ticks, float partialTick, PoseStack poseStack, double camX, double camY, double camZ, Matrix4f modelViewMatrix, Matrix4f projectionMatrix)
+    {
         return true;
     }
 }

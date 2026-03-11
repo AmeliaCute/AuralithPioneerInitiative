@@ -1,5 +1,7 @@
 package cute.ame.auralithpioneerinitiative.Mixin.Rendering;
 
+import cute.ame.auralithpioneerinitiative.API.AuralithAPI;
+import cute.ame.auralithpioneerinitiative.Client.Dimension.SpaceDimensionEffect;
 import cute.ame.auralithpioneerinitiative.Client.Sky.SolarSystemRenderer;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -21,8 +23,11 @@ public abstract class SkyMixin
         ClientLevel level = mc.level;
         if (level == null) return;
 
-        SolarSystemRenderer renderer = SolarSystemRenderer.getInstance();
-        renderer.renderSky(frustumMatrix, projectionMatrix, partialTick, camera, isFoggy, skyFogSetup, level);
+        if (level.effects() instanceof SpaceDimensionEffect) return;
+        if (!AuralithAPI.hasSkyFor(level.dimension())) return;
+
+        SolarSystemRenderer.getInstance().renderSky(
+            frustumMatrix, projectionMatrix, partialTick, camera, isFoggy, skyFogSetup, level);
         ci.cancel();
     }
 }
