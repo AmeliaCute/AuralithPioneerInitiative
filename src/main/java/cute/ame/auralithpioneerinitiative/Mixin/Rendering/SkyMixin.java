@@ -22,8 +22,6 @@ public abstract class SkyMixin
         if (level == null) return;
 
         SolarSystemRenderer renderer = SolarSystemRenderer.getInstance();
-        if (!renderer.shouldHandleSky(level.dimension())) return;
-
         renderer.renderSky(frustumMatrix, projectionMatrix, partialTick, camera, isFoggy, skyFogSetup, level);
         ci.cancel();
     }
