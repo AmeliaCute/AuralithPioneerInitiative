@@ -11,6 +11,7 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
+import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -530,34 +531,60 @@ public final class SolarSystemRenderer
 
     private void renderTextureCube(PoseStack ps, ResourceLocation texture)
     {
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        RenderSystem.setShader(GameRenderer::getRendertypeEntitySolidShader);
         RenderSystem.setShaderTexture(0, texture);
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+
         GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST);
         GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
+
         RenderSystem.disableDepthTest();
         RenderSystem.depthMask(false);
         RenderSystem.disableBlend();
         RenderSystem.enableCull();
 
         Tesselator tess = Tesselator.getInstance();
-        BufferBuilder buf  = tess.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+        BufferBuilder buf = tess.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.NEW_ENTITY);
+
         Matrix4f m = ps.last().pose();
         float h = 0.5f;
 
-        buf.addVertex(m,-h, h, h).setUv(0,1); buf.addVertex(m, h, h, h).setUv(1,1);
-        buf.addVertex(m, h, h,-h).setUv(1,0); buf.addVertex(m,-h, h,-h).setUv(0,0);
-        buf.addVertex(m,-h,-h,-h).setUv(0,0); buf.addVertex(m, h,-h,-h).setUv(1,0);
-        buf.addVertex(m, h,-h, h).setUv(1,1); buf.addVertex(m,-h,-h, h).setUv(0,1);
-        buf.addVertex(m, h, h, h).setUv(0,0); buf.addVertex(m,-h, h, h).setUv(1,0);
-        buf.addVertex(m,-h,-h, h).setUv(1,1); buf.addVertex(m, h,-h, h).setUv(0,1);
-        buf.addVertex(m,-h, h,-h).setUv(0,0); buf.addVertex(m, h, h,-h).setUv(1,0);
-        buf.addVertex(m, h,-h,-h).setUv(1,1); buf.addVertex(m,-h,-h,-h).setUv(0,1);
-        buf.addVertex(m, h, h,-h).setUv(0,0); buf.addVertex(m, h, h, h).setUv(1,0);
-        buf.addVertex(m, h,-h, h).setUv(1,1); buf.addVertex(m, h,-h,-h).setUv(0,1);
-        buf.addVertex(m,-h, h, h).setUv(0,0); buf.addVertex(m,-h, h,-h).setUv(1,0);
-        buf.addVertex(m,-h,-h,-h).setUv(1,1); buf.addVertex(m,-h,-h, h).setUv(0,1);
+        int light   = net.minecraft.client.renderer.LightTexture.FULL_BRIGHT;
+        int overlay = net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY;
+
+        buf.addVertex(m,-h, h, h).setColor(1f,1f,1f,1f).setUv(0,1).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0, 1, 0);
+        buf.addVertex(m, h, h, h).setColor(1f,1f,1f,1f).setUv(1,1).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0, 1, 0);
+        buf.addVertex(m, h, h,-h).setColor(1f,1f,1f,1f).setUv(1,0).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0, 1, 0);
+        buf.addVertex(m,-h, h,-h).setColor(1f,1f,1f,1f).setUv(0,0).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0, 1, 0);
+
+        buf.addVertex(m,-h,-h,-h).setColor(1f,1f,1f,1f).setUv(0,0).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0,-1, 0);
+        buf.addVertex(m, h,-h,-h).setColor(1f,1f,1f,1f).setUv(1,0).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0,-1, 0);
+        buf.addVertex(m, h,-h, h).setColor(1f,1f,1f,1f).setUv(1,1).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0,-1, 0);
+        buf.addVertex(m,-h,-h, h).setColor(1f,1f,1f,1f).setUv(0,1).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0,-1, 0);
+
+        buf.addVertex(m, h, h, h).setColor(1f,1f,1f,1f).setUv(0,0).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0, 0, 1);
+        buf.addVertex(m,-h, h, h).setColor(1f,1f,1f,1f).setUv(1,0).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0, 0, 1);
+        buf.addVertex(m,-h,-h, h).setColor(1f,1f,1f,1f).setUv(1,1).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0, 0, 1);
+        buf.addVertex(m, h,-h, h).setColor(1f,1f,1f,1f).setUv(0,1).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0, 0, 1);
+
+        buf.addVertex(m,-h, h,-h).setColor(1f,1f,1f,1f).setUv(0,0).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0, 0,-1);
+        buf.addVertex(m, h, h,-h).setColor(1f,1f,1f,1f).setUv(1,0).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0, 0,-1);
+        buf.addVertex(m, h,-h,-h).setColor(1f,1f,1f,1f).setUv(1,1).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0, 0,-1);
+        buf.addVertex(m,-h,-h,-h).setColor(1f,1f,1f,1f).setUv(0,1).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0, 0,-1);
+
+        buf.addVertex(m, h, h,-h).setColor(1f,1f,1f,1f).setUv(0,0).setOverlay(overlay).setLight(light).setNormal(ps.last(), 1, 0, 0);
+        buf.addVertex(m, h, h, h).setColor(1f,1f,1f,1f).setUv(1,0).setOverlay(overlay).setLight(light).setNormal(ps.last(), 1, 0, 0);
+        buf.addVertex(m, h,-h, h).setColor(1f,1f,1f,1f).setUv(1,1).setOverlay(overlay).setLight(light).setNormal(ps.last(), 1, 0, 0);
+        buf.addVertex(m, h,-h,-h).setColor(1f,1f,1f,1f).setUv(0,1).setOverlay(overlay).setLight(light).setNormal(ps.last(), 1, 0, 0);
+
+        buf.addVertex(m,-h, h, h).setColor(1f,1f,1f,1f).setUv(0,0).setOverlay(overlay).setLight(light).setNormal(ps.last(),-1, 0, 0);
+        buf.addVertex(m,-h, h,-h).setColor(1f,1f,1f,1f).setUv(1,0).setOverlay(overlay).setLight(light).setNormal(ps.last(),-1, 0, 0);
+        buf.addVertex(m,-h,-h,-h).setColor(1f,1f,1f,1f).setUv(1,1).setOverlay(overlay).setLight(light).setNormal(ps.last(),-1, 0, 0);
+        buf.addVertex(m,-h,-h, h).setColor(1f,1f,1f,1f).setUv(0,1).setOverlay(overlay).setLight(light).setNormal(ps.last(),-1, 0, 0);
 
         BufferUploader.drawWithShader(buf.buildOrThrow());
+
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
         RenderSystem.depthMask(true);
     }
 
