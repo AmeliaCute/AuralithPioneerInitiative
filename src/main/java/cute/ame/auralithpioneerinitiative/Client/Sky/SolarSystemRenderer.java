@@ -399,17 +399,18 @@ public final class SolarSystemRenderer
     private void renderRings(PoseStack ps, RingDefinition rings, float apparentSize)
     {
         setupRingRenderState();
-        Random rng  = new Random(rings.seed());
+        Random rng = new Random(rings.seed());
         Tesselator tess = Tesselator.getInstance();
-        BufferBuilder buf  = tess.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+        BufferBuilder buf = tess.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.NEW_ENTITY);
         Matrix4f m = ps.last().pose();
         float planetRadius = apparentSize * 0.5f;
-        emitRingQuads(buf, m, rings.innerRadius() * planetRadius, rings.outerRadius() * planetRadius, Math.max(1, rings.ringCount()), rings, rng);
+        emitRingQuads(buf, ps, rings.innerRadius() * planetRadius,rings.outerRadius() * planetRadius, Math.max(1, rings.ringCount()), rings, rng);
         BufferUploader.drawWithShader(buf.buildOrThrow());
         teardownRingRenderState();
     }
 
-    private void renderRings(PoseStack ps, RingDefinition rings, float apparentSize, float localCamX, float localCamY, float localCamZ, boolean front)
+    private void renderRings(PoseStack ps, RingDefinition rings, float apparentSize,
+                             float localCamX, float localCamY, float localCamZ, boolean front)
     {
         setupRingRenderState();
         float planetRadius = apparentSize * 0.5f;
@@ -420,15 +421,18 @@ public final class SolarSystemRenderer
         float[] quadDotX = {  0,  0, -1, +1, -1, +1, -1, +1 };
         float[] quadDotZ = { -1, +1,  0,  0, -1, -1, +1, +1 };
 
-        Random rng  = new Random(rings.seed());
+        int light   = net.minecraft.client.renderer.LightTexture.FULL_BRIGHT;
+        int overlay = net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY;
+
+        Random rng = new Random(rings.seed());
         Tesselator tess = Tesselator.getInstance();
-        BufferBuilder buf = tess.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+        BufferBuilder buf = tess.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.NEW_ENTITY);
         Matrix4f m = ps.last().pose();
 
         for (int ri = 0; ri < count; ri++)
         {
             float r0 = lerp(innerR, outerR, (float) ri / count);
-            float r1 = lerp(innerR, outerR, (float)(ri + 1) / count);
+            float r1 = lerp(innerR, outerR, (float)(ri + 1)  / count);
             float rndT = rng.nextFloat();
             float cr = lerp(rings.minR(), rings.maxR(), rndT);
             float cg = lerp(rings.minG(), rings.maxG(), rndT);
@@ -451,7 +455,9 @@ public final class SolarSystemRenderer
             {
                 float dot = quadDotX[qi] * localCamX + quadDotZ[qi] * localCamZ;
                 if ((dot >= 0) != front) continue;
-                for (float[] v : quads[qi]) buf.addVertex(m, v[0], v[1], v[2]).setUv(0f, 0f).setColor(cr, cg, cb, ca);
+
+                for (float[] v : quads[qi])
+                    buf.addVertex(m, v[0], v[1], v[2]).setColor(cr, cg, cb, ca).setUv(0f, 0f).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0, 1, 0);
             }
         }
         BufferUploader.drawWithShader(buf.buildOrThrow());
@@ -460,7 +466,7 @@ public final class SolarSystemRenderer
 
     private void setupRingRenderState()
     {
-        RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
+        RenderSystem.setShader(GameRenderer::getRendertypeEntitySolidShader);
         RenderSystem.setShaderTexture(0, RingTextureHelper.getWhite());
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
         RenderSystem.disableDepthTest();
@@ -482,50 +488,35 @@ public final class SolarSystemRenderer
         RenderSystem.enableCull();
     }
 
-    private void emitRingQuads(BufferBuilder buf, Matrix4f m, float innerR, float outerR, int count, RingDefinition rings, Random rng)
+    private void emitRingQuads(BufferBuilder buf, PoseStack ps, float innerR, float outerR, int count, RingDefinition rings, Random rng)
     {
+        int light = net.minecraft.client.renderer.LightTexture.FULL_BRIGHT;
+        int overlay = net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY;
+        Matrix4f m = ps.last().pose();
+
         for (int ri = 0; ri < count; ri++)
         {
-            float r0 = lerp(innerR, outerR, (float) ri / count);
-            float r1 = lerp(innerR, outerR, (float)(ri + 1) / count);
+            float r0 = lerp(innerR, outerR, (float) ri  / count);
+            float r1 = lerp(innerR, outerR, (float)(ri + 1)  / count);
             float rndT = rng.nextFloat();
             float cr = lerp(rings.minR(), rings.maxR(), rndT);
             float cg = lerp(rings.minG(), rings.maxG(), rndT);
             float cb = lerp(rings.minB(), rings.maxB(), rndT);
             float ca = rings.opacity() * (0.6f + 0.4f * rng.nextFloat());
 
-            buf.addVertex(m,-r0,0,-r1).setUv(0,0).setColor(cr,cg,cb,ca);
-            buf.addVertex(m, r0,0,-r1).setUv(0,0).setColor(cr,cg,cb,ca);
-            buf.addVertex(m, r0,0,-r0).setUv(0,0).setColor(cr,cg,cb,ca);
-            buf.addVertex(m,-r0,0,-r0).setUv(0,0).setColor(cr,cg,cb,ca);
-            buf.addVertex(m,-r0,0, r0).setUv(0,0).setColor(cr,cg,cb,ca);
-            buf.addVertex(m, r0,0, r0).setUv(0,0).setColor(cr,cg,cb,ca);
-            buf.addVertex(m, r0,0, r1).setUv(0,0).setColor(cr,cg,cb,ca);
-            buf.addVertex(m,-r0,0, r1).setUv(0,0).setColor(cr,cg,cb,ca);
-            buf.addVertex(m,-r1,0,-r0).setUv(0,0).setColor(cr,cg,cb,ca);
-            buf.addVertex(m,-r0,0,-r0).setUv(0,0).setColor(cr,cg,cb,ca);
-            buf.addVertex(m,-r0,0, r0).setUv(0,0).setColor(cr,cg,cb,ca);
-            buf.addVertex(m,-r1,0, r0).setUv(0,0).setColor(cr,cg,cb,ca);
-            buf.addVertex(m, r0,0,-r0).setUv(0,0).setColor(cr,cg,cb,ca);
-            buf.addVertex(m, r1,0,-r0).setUv(0,0).setColor(cr,cg,cb,ca);
-            buf.addVertex(m, r1,0, r0).setUv(0,0).setColor(cr,cg,cb,ca);
-            buf.addVertex(m, r0,0, r0).setUv(0,0).setColor(cr,cg,cb,ca);
-            buf.addVertex(m,-r1,0,-r1).setUv(0,0).setColor(cr,cg,cb,ca);
-            buf.addVertex(m,-r0,0,-r1).setUv(0,0).setColor(cr,cg,cb,ca);
-            buf.addVertex(m,-r0,0,-r0).setUv(0,0).setColor(cr,cg,cb,ca);
-            buf.addVertex(m,-r1,0,-r0).setUv(0,0).setColor(cr,cg,cb,ca);
-            buf.addVertex(m, r0,0,-r1).setUv(0,0).setColor(cr,cg,cb,ca);
-            buf.addVertex(m, r1,0,-r1).setUv(0,0).setColor(cr,cg,cb,ca);
-            buf.addVertex(m, r1,0,-r0).setUv(0,0).setColor(cr,cg,cb,ca);
-            buf.addVertex(m, r0,0,-r0).setUv(0,0).setColor(cr,cg,cb,ca);
-            buf.addVertex(m,-r1,0, r0).setUv(0,0).setColor(cr,cg,cb,ca);
-            buf.addVertex(m,-r0,0, r0).setUv(0,0).setColor(cr,cg,cb,ca);
-            buf.addVertex(m,-r0,0, r1).setUv(0,0).setColor(cr,cg,cb,ca);
-            buf.addVertex(m,-r1,0, r1).setUv(0,0).setColor(cr,cg,cb,ca);
-            buf.addVertex(m, r0,0, r0).setUv(0,0).setColor(cr,cg,cb,ca);
-            buf.addVertex(m, r1,0, r0).setUv(0,0).setColor(cr,cg,cb,ca);
-            buf.addVertex(m, r1,0, r1).setUv(0,0).setColor(cr,cg,cb,ca);
-            buf.addVertex(m, r0,0, r1).setUv(0,0).setColor(cr,cg,cb,ca);
+            float[][] verts =
+            {
+                {-r0,0,-r1}, { r0,0,-r1}, { r0,0,-r0}, {-r0,0,-r0},
+                {-r0,0, r0}, { r0,0, r0}, { r0,0, r1}, {-r0,0, r1},
+                {-r1,0,-r0}, {-r0,0,-r0}, {-r0,0, r0}, {-r1,0, r0},
+                { r0,0,-r0}, { r1,0,-r0}, { r1,0, r0}, { r0,0, r0},
+                {-r1,0,-r1}, {-r0,0,-r1}, {-r0,0,-r0}, {-r1,0,-r0},
+                { r0,0,-r1}, { r1,0,-r1}, { r1,0,-r0}, { r0,0,-r0},
+                {-r1,0, r0}, {-r0,0, r0}, {-r0,0, r1}, {-r1,0, r1},
+                { r0,0, r0}, { r1,0, r0}, { r1,0, r1}, { r0,0, r1},
+            };
+
+            for (float[] v : verts) buf.addVertex(m, v[0], v[1], v[2]).setColor(cr, cg, cb, ca).setUv(0f, 0f).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0, 1, 0);
         }
     }
 
