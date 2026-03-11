@@ -3,6 +3,7 @@ package cute.ame.auralithpioneerinitiative.Event;
 import cute.ame.auralithpioneerinitiative.API.AuralithAPI;
 import cute.ame.auralithpioneerinitiative.Auralithpioneerinitiative;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -12,7 +13,6 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerChangedDimensionEvent;
-import net.minecraft.resources.ResourceLocation;
 
 @EventBusSubscriber(modid = Auralithpioneerinitiative.MODID)
 public class GravityEvent
@@ -22,7 +22,8 @@ public class GravityEvent
     @SubscribeEvent
     public static void onEntityJoin(EntityJoinLevelEvent event)
     {
-      if (event.getEntity() instanceof LivingEntity living && event.getLevel() instanceof Level level) applyGravity(living, level.dimension());
+      if (event.getEntity() instanceof LivingEntity living && event.getLevel() instanceof Level level)
+        applyGravity(living, level.dimension());
     }
 
     @SubscribeEvent
@@ -37,14 +38,13 @@ public class GravityEvent
       if (attr == null) return;
 
       attr.removeModifier(GRAVITY_ID);
-
       float gravity = AuralithAPI.getGravityFor(dim);
       if (gravity != 1.0f)
       {
         attr.addPermanentModifier(new AttributeModifier(
           GRAVITY_ID,
           gravity - 1.0f,
-          AttributeModifier.Operation.ADD_VALUE
+          AttributeModifier.Operation.ADD_MULTIPLIED_BASE
         ));
       }
     }

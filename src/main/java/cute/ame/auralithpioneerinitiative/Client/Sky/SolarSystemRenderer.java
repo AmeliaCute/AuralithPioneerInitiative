@@ -71,19 +71,18 @@ public final class SolarSystemRenderer
       PlanetDefinition current = system.planets().stream().filter(p -> p.id().equals(currentPlanetId)).findFirst().orElse(null);
       if (current == null) return;
 
-      double myAngle = current.orbit().computeAngle(tick, partialTick);
+      double myAngle  = current.orbit().computeAngle(tick, partialTick);
       double myRadius = current.orbit().computeCurrentRadius(myAngle);
-      float[] myPos = current.orbit().compute3DPosition(myAngle, myRadius, 1.0f);
+      float[] myPos   = current.orbit().compute3DPosition(myAngle, myRadius, 1.0f);
 
       float sdx = -myPos[0];
       float sdy = (float)(myRadius * 0.18);
       float sdz = -myPos[2];
-      float slen = (float) Math.sqrt(sdx*sdx + sdy*sdy + sdz*sdz) * 0.5f;
+      float slen = (float) Math.sqrt(sdx*sdx + sdy*sdy + sdz*sdz);
       if (slen > 1e-6f) renderSun(ps, system.sun(), tick, partialTick, sdx/slen, sdy/slen, sdz/slen);
 
       ps.pushPose();
-      float s = current.size() * 2;
-      ps.translate(-s, (SKY_RADIUS / 2) - s, -s);
+      ps.translate(0.0f, -SKY_RADIUS, 0.0f);
       poseAxialRotation(ps, current.axialRotationSpeed(), tick, partialTick);
       ps.mulPose(new Quaternionf().rotationZ((float) Math.toRadians(current.axialTilt())));
 
@@ -111,9 +110,9 @@ public final class SolarSystemRenderer
       {
         if (planet.id().equals(currentPlanetId)) continue;
 
-        double theirAngle = planet.orbit().computeAngle(tick, partialTick);
+        double theirAngle  = planet.orbit().computeAngle(tick, partialTick);
         double theirRadius = planet.orbit().computeCurrentRadius(theirAngle);
-        float[] theirPos = planet.orbit().compute3DPosition(theirAngle, theirRadius, 1.0f);
+        float[] theirPos   = planet.orbit().compute3DPosition(theirAngle, theirRadius, 1.0f);
 
         float dx = theirPos[0] - myPos[0];
         float dy = theirPos[1] - myPos[1];
@@ -579,7 +578,7 @@ public final class SolarSystemRenderer
 
     private void poseAxialRotation(PoseStack ps, float speed, long tick, float partialTick)
     {
-      float angle = ((tick + partialTick) * speed * 0.001f) % (float)(2.0 * Math.PI);
+      float angle = ((tick + partialTick) * speed * 0.0000001f) % (float)(2.0 * Math.PI);
       ps.mulPose(new Quaternionf().rotationY(angle));
     }
 
