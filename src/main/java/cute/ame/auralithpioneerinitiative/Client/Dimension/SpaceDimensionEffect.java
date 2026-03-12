@@ -41,8 +41,7 @@ public class SpaceDimensionEffect extends DimensionSpecialEffects
     @Override
     public boolean renderSky(ClientLevel level, int ticks, float partialTick, Matrix4f modelViewMatrix, Camera camera, Matrix4f projectionMatrix, boolean isFoggy, Runnable setupFog)
     {
-        if (AuralithAPI.hasSkyFor(level.dimension()))
-            SolarSystemRenderer.getInstance().renderSky(modelViewMatrix, projectionMatrix, partialTick, camera, isFoggy, setupFog, level);
+        if (AuralithAPI.hasSkyFor(level.dimension())) SolarSystemRenderer.getInstance().renderSky(modelViewMatrix, projectionMatrix, partialTick, camera, isFoggy, setupFog, level);
         return true;
     }
 

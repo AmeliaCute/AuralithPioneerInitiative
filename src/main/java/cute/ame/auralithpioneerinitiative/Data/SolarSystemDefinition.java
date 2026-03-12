@@ -20,4 +20,23 @@ public record SolarSystemDefinition(
             ResourceLocation.CODEC.optionalFieldOf("space_dimension").forGetter(SolarSystemDefinition::spaceDimension)
         ).apply(instance, SolarSystemDefinition::new)
     );
+
+    public Optional<PlanetDefinition> findParent(ResourceLocation moonId)
+    {
+        for (PlanetDefinition planet : planets)
+            for (PlanetDefinition moon : planet.moons())
+                if (moon.id().equals(moonId)) return Optional.of(planet);
+        return Optional.empty();
+    }
+
+    public Optional<PlanetDefinition> findById(ResourceLocation id)
+    {
+        for (PlanetDefinition planet : planets)
+        {
+            if (planet.id().equals(id)) return Optional.of(planet);
+            for (PlanetDefinition moon : planet.moons())
+                if (moon.id().equals(id)) return Optional.of(moon);
+        }
+        return Optional.empty();
+    }
 }

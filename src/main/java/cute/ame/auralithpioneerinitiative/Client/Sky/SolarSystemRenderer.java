@@ -12,6 +12,7 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
@@ -37,7 +38,7 @@ public final class SolarSystemRenderer
         skyFogSetup.run();
 
         Matrix4f rotOnly = new Matrix4f(frustumMatrix);
-        rotOnly.m30(0.0f).m31(0.0f).m32(0.0f);
+        rotOnly.m03(0.0f).m13(0.0f).m23(0.0f);
 
         com.mojang.blaze3d.systems.RenderSystem.getModelViewStack().pushMatrix();
         com.mojang.blaze3d.systems.RenderSystem.getModelViewStack().identity();
@@ -45,13 +46,13 @@ public final class SolarSystemRenderer
 
         PoseStack ps = new PoseStack();
         ps.mulPose(rotOnly);
-        renderCelestials(ps, level, partialTick);
+        renderCelestials(ps, camera, level, partialTick);
 
         com.mojang.blaze3d.systems.RenderSystem.getModelViewStack().popMatrix();
         com.mojang.blaze3d.systems.RenderSystem.applyModelViewMatrix();
     }
 
-    private void renderCelestials(PoseStack ps, ClientLevel level, float partialTick)
+    private void renderCelestials(PoseStack ps, Camera camera, ClientLevel level, float partialTick)
     {
         Optional<AuralithAPI.DimensionBinding> bOpt = AuralithAPI.getBindingForDimension(level.dimension());
         if (bOpt.isEmpty()) return;
@@ -63,7 +64,7 @@ public final class SolarSystemRenderer
         switch (binding.type())
         {
             case SPACE -> renderFromSpace(ps, level, sOpt.get(), partialTick);
-            case ORBIT -> renderFromOrbit(ps, level, sOpt.get(), binding.planetId(), partialTick);
+            case ORBIT -> renderFromOrbit(ps, camera,  level, sOpt.get(), binding.planetId(), partialTick);
             case SURFACE -> renderFromSurface(ps, level, sOpt.get(), binding.planetId(), partialTick);
         }
     }
@@ -81,8 +82,7 @@ public final class SolarSystemRenderer
 
         renderSun(ps, system.sun(), tick, partialTick);
 
-        PlanetDefinition current = system.planets().stream()
-            .filter(p -> p.id().equals(currentPlanetId)).findFirst().orElse(null);
+        PlanetDefinition current = system.planets().stream().filter(p -> p.id().equals(currentPlanetId)).findFirst().orElse(null);
         if (current != null)
         {
             double myAngle  = current.orbit().computeAngle(tick, partialTick);
@@ -105,7 +105,7 @@ public final class SolarSystemRenderer
                 float apparentSize = Math.max(MIN_APPARENT, planet.size() * REF_AU / dist);
                 float cdx = dx / dist, cdy = dy / dist, cdz = dz / dist;
 
-                renderPlanetInSky(ps, planet, theirPos, apparentSize, cdx, cdy, cdz, tick, partialTick);
+                renderPlanetInSky(ps, planet, theirPos, apparentSize, cdx, cdy, cdz, tick, partialTick, true);
             }
         }
 
@@ -113,28 +113,100 @@ public final class SolarSystemRenderer
     }
 
 
-    private void renderFromOrbit(PoseStack ps, ClientLevel level, SolarSystemDefinition system, ResourceLocation currentPlanetId, float partialTick)
+    private void renderFromOrbit(PoseStack ps, Camera camera, ClientLevel level, SolarSystemDefinition system, ResourceLocation currentPlanetId, float partialTick)
     {
         long tick = level.getGameTime();
 
-        PlanetDefinition current = system.planets().stream().filter(p -> p.id().equals(currentPlanetId)).findFirst().orElse(null);
+        PlanetDefinition current = system.findById(currentPlanetId).orElse(null);
         if (current == null) return;
 
-        double myAngle  = current.orbit().computeAngle(tick, partialTick);
-        double myRadius = current.orbit().computeCurrentRadius(myAngle);
-        float[] myPos   = current.orbit().compute3DPosition(myAngle, myRadius, 1.0f);
+        Optional<PlanetDefinition> parentOpt = system.findParent(currentPlanetId);
+        boolean isMoon = parentOpt.isPresent();
 
-        float sdx  = -myPos[0];
-        float sdy  = (float)(myRadius * 0.18);
-        float sdz  = -myPos[2];
+        float[] myAbsPos;
+        if (isMoon)
+        {
+            PlanetDefinition parent = parentOpt.get();
+            double parentAngle = parent.orbit().computeAngle(tick, partialTick);
+            double parentRadius = parent.orbit().computeCurrentRadius(parentAngle);
+            float[] parentPos = parent.orbit().compute3DPosition(parentAngle, parentRadius, 1.0f);
+
+            double moonAngle = current.orbit().computeAngle(tick, partialTick);
+            double moonRadius = current.orbit().computeCurrentRadius(moonAngle);
+            float[] moonRelPos = current.orbit().compute3DPosition(moonAngle, moonRadius, 1.0f);
+
+            myAbsPos = new float[]{parentPos[0] + moonRelPos[0], parentPos[1] + moonRelPos[1], parentPos[2] + moonRelPos[2]
+            };
+        }
+        else
+        {
+            double myAngle  = current.orbit().computeAngle(tick, partialTick);
+            double myRadius = current.orbit().computeCurrentRadius(myAngle);
+            myAbsPos = current.orbit().compute3DPosition(myAngle, myRadius, 1.0f);
+        }
+
+        if (!isMoon) for (PlanetDefinition moon : current.moons()) renderMoonFromOrbit(ps, moon, tick, partialTick);
+        if (isMoon)
+        {
+            PlanetDefinition parent = parentOpt.get();
+            double parentAngle = parent.orbit().computeAngle(tick, partialTick);
+            double parentRadius = parent.orbit().computeCurrentRadius(parentAngle);
+            float[] parentPos = parent.orbit().compute3DPosition(parentAngle, parentRadius, 1.0f);
+
+            double moonAngle = current.orbit().computeAngle(tick, partialTick);
+            double moonRadius = current.orbit().computeCurrentRadius(moonAngle);
+            float[] moonRel = current.orbit().compute3DPosition(moonAngle, moonRadius, 1.0f);
+
+            float dx = -moonRel[0], dy = -moonRel[1], dz = -moonRel[2];
+            float dist = Math.max((float) Math.sqrt(dx*dx + dy*dy + dz*dz), 0.01f) * 8f;
+            float apparentSize = Math.max(MIN_APPARENT, parent.size() * REF_AU / dist) * 12f;
+
+            renderPlanetInSky(ps, parent, new float[]{dx, dy, dz}, apparentSize,dx/dist, dy/dist, dz/dist, tick, partialTick, false);
+        }
+
+        for (PlanetDefinition planet : system.planets())
+        {
+            if (planet.id().equals(isMoon ? parentOpt.get().id() : currentPlanetId)) continue;
+
+            double theirAngle  = planet.orbit().computeAngle(tick, partialTick);
+            double theirRadius = planet.orbit().computeCurrentRadius(theirAngle);
+            float[] theirPos   = planet.orbit().compute3DPosition(theirAngle, theirRadius, 1.0f);
+
+            float dx = theirPos[0] - myAbsPos[0];
+            float dy = theirPos[1] - myAbsPos[1];
+            float dz = theirPos[2] - myAbsPos[2];
+            float dist = Math.max((float) Math.sqrt(dx*dx + dy*dy + dz*dz), 0.01f);
+
+            float apparentSize = Math.max(MIN_APPARENT, planet.size() * REF_AU / dist);
+            renderPlanetInSky(ps, planet, new float[]{dx, dy, dz}, apparentSize,-dx/dist, -dy/dist, -dz/dist, tick, partialTick, true);
+        }
+
+        double myAbsRadius = Math.sqrt(myAbsPos[0]*myAbsPos[0] + myAbsPos[1]*myAbsPos[1] + myAbsPos[2]*myAbsPos[2]);
+
+        float sdx = -myAbsPos[0];
+        float sdy = (float)(myAbsRadius * 0.18);
+        float sdz = -myAbsPos[2];
         float slen = (float) Math.sqrt(sdx*sdx + sdy*sdy + sdz*sdz);
-        if (slen > 1e-6f) renderSunDirectional(ps, system.sun(), tick, partialTick, sdx/slen, sdy/slen, sdz/slen);
+        if (slen > 1e-6f)
+        {
+            float sunApparentScale = (float)(REF_AU / Math.max(myAbsRadius, 0.01)) * 64f;
+            renderSunDirectional(ps, system.sun(), tick, partialTick, sdx/slen, sdy/slen, sdz/slen, sunApparentScale);
+        }
+
+        Vec3 camPos = camera.getPosition();
+        double camLen = camPos.length();
+        float nx = 0f, ny = -1f, nz = 0f;
+        if (camLen > 0.01)
+        {
+            nx = (float)(-camPos.x / camLen);
+            ny = (float)(-camPos.y / camLen);
+            nz = (float)(-camPos.z / camLen);
+        }
 
         ps.pushPose();
-        ps.translate(0.0f, -SKY_RADIUS, 0.0f);
+        ps.translate(nx * SKY_RADIUS, ny * SKY_RADIUS, nz * SKY_RADIUS);
         poseAxialRotation(ps, current.axialRotationSpeed(), tick, partialTick);
         ps.mulPose(new Quaternionf().rotationZ((float) Math.toRadians(current.axialTilt())));
-
         current.atmosphere().ifPresent(atmo ->
         {
             ps.pushPose();
@@ -144,35 +216,11 @@ public final class SolarSystemRenderer
             ps.popPose();
         });
         current.rings().ifPresent(rings -> renderRings(ps, rings, ORBIT_PLANET_SIZE));
-
         ps.pushPose();
         ps.scale(ORBIT_PLANET_SIZE, ORBIT_PLANET_SIZE, ORBIT_PLANET_SIZE);
         renderTextureCube(ps, current.resolveTexture());
         ps.popPose();
-
         ps.popPose();
-
-        for (PlanetDefinition moon : current.moons())
-            renderMoonFromOrbit(ps, moon, tick, partialTick);
-
-        for (PlanetDefinition planet : system.planets())
-        {
-            if (planet.id().equals(currentPlanetId)) continue;
-
-            double theirAngle  = planet.orbit().computeAngle(tick, partialTick);
-            double theirRadius = planet.orbit().computeCurrentRadius(theirAngle);
-            float[] theirPos   = planet.orbit().compute3DPosition(theirAngle, theirRadius, 1.0f);
-
-            float dx = theirPos[0] - myPos[0];
-            float dy = theirPos[1] - myPos[1];
-            float dz = theirPos[2] - myPos[2];
-            float dist = Math.max((float) Math.sqrt(dx*dx + dy*dy + dz*dz), 0.01f);
-
-            float apparentSize = Math.max(MIN_APPARENT, planet.size() * REF_AU / dist);
-            float cdx = -dx/dist, cdy = -dy/dist, cdz = -dz/dist;
-
-            renderPlanetInSky(ps, planet, new float[]{dx, dy, dz}, apparentSize, cdx, cdy, cdz, tick, partialTick);
-        }
     }
 
     private void renderMoonFromOrbit(PoseStack ps, PlanetDefinition moon, long tick, float partialTick)
@@ -267,7 +315,7 @@ public final class SolarSystemRenderer
         }
     }
 
-    private void renderPlanetInSky(PoseStack ps, PlanetDefinition planet, float[] dirPos, float apparentSize, float cdx, float cdy, float cdz, long tick, float partialTick)
+    private void renderPlanetInSky(PoseStack ps, PlanetDefinition planet, float[] dirPos, float apparentSize, float cdx, float cdy, float cdz, long tick, float partialTick, boolean renderMoon)
     {
         float len = (float) Math.sqrt(dirPos[0]*dirPos[0] + dirPos[1]*dirPos[1] + dirPos[2]*dirPos[2]);
         if (len < 1e-6f) return;
@@ -306,7 +354,7 @@ public final class SolarSystemRenderer
         ps.popPose();
 
         planet.rings().ifPresent(rings -> renderRings(ps, rings, apparentSize, localCam.x, localCam.y, localCam.z, true));
-        for (PlanetDefinition moon : planet.moons()) renderMoon(ps, moon, apparentSize, tick, partialTick);
+        if (renderMoon) for (PlanetDefinition moon : planet.moons()) renderMoon(ps, moon, apparentSize, tick, partialTick);
 
         ps.popPose();
     }
@@ -378,6 +426,46 @@ public final class SolarSystemRenderer
         float r = sun.glowR(), g = sun.glowG(), b = sun.glowB();
         int layers = sun.glowLayers();
         float coreSize = sun.size();
+        float glowScale = sun.glowScale();
+
+        for (int i = layers; i > 0; i--)
+        {
+            float t = (float) i / layers;
+            float layerSize = coreSize * (1.0f + t * (glowScale - 1.0f));
+            float alpha = (1.0f - t) * 0.06f;
+            ps.pushPose();
+            ps.scale(layerSize, layerSize, layerSize);
+            renderColoredCube(ps, r, g, b, alpha);
+            ps.popPose();
+        }
+
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthMask(true);
+        RenderSystem.enableCull();
+    }
+
+    private void renderSunDirectional(PoseStack ps, SunDefinition sun, long tick, float partialTick, float nx, float ny, float nz, float apparentScale)
+    {
+        ps.pushPose();
+        ps.translate(nx * SKY_RADIUS, ny * SKY_RADIUS, nz * SKY_RADIUS);
+        poseAxialRotation(ps, sun.axialRotationSpeed(), tick, partialTick);
+        if (sun.glowLayers() > 0) renderSunGlow(ps, sun, apparentScale);
+        ps.popPose();
+    }
+
+    private void renderSunGlow(PoseStack ps, SunDefinition sun, float apparentScale)
+    {
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        RenderSystem.disableDepthTest();
+        RenderSystem.depthMask(false);
+        RenderSystem.enableBlend();
+        RenderSystem.blendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ONE, GL11.GL_ZERO);
+        RenderSystem.disableCull();
+
+        float r = sun.glowR(), g = sun.glowG(), b = sun.glowB();
+        int layers = sun.glowLayers();
+        float coreSize  = sun.size() * apparentScale;
         float glowScale = sun.glowScale();
 
         for (int i = layers; i > 0; i--)

@@ -31,6 +31,12 @@ public final class AuralithAPI
     {
       planet.dimension().ifPresent(dimId -> DIM_BINDINGS.put(dimId, new DimensionBinding(id, planet.id(), BindingType.SURFACE)));
       planet.orbitDimension().ifPresent(orbitId -> DIM_BINDINGS.put(orbitId, new DimensionBinding(id, planet.id(), BindingType.ORBIT)));
+
+      for (PlanetDefinition moon : planet.moons())
+      {
+        moon.dimension().ifPresent(dimId -> DIM_BINDINGS.put(dimId, new DimensionBinding(id, moon.id(), BindingType.SURFACE)));
+        moon.orbitDimension().ifPresent(orbitId -> DIM_BINDINGS.put(orbitId, new DimensionBinding(id, moon.id(), BindingType.ORBIT)));
+      }
     }
     definition.spaceDimension().ifPresent(spaceDim -> DIM_BINDINGS.put(spaceDim, new DimensionBinding(id, null, BindingType.SPACE)));
   }

@@ -1,6 +1,7 @@
 package cute.ame.auralithpioneerinitiative.Event;
 
 import cute.ame.auralithpioneerinitiative.Auralithpioneerinitiative;
+import cute.ame.auralithpioneerinitiative.API.AuralithAPI;
 import cute.ame.auralithpioneerinitiative.Item.PortableThrusterItem;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
@@ -20,7 +21,10 @@ public class PortableThrusterEvent
     if (!player.isUsingItem()) return;
     if (!(player.getUseItem().getItem() instanceof PortableThrusterItem)) return;
 
-    applyThrust(player);
+    AuralithAPI.getBindingForDimension(player.level().dimension()).ifPresent(surface ->
+    {
+      if(!surface.isSurfaceDimension()) applyThrust(player);
+    });
   }
 
   private static void applyThrust(ServerPlayer player)
