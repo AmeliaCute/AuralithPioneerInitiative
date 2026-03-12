@@ -1,6 +1,6 @@
 *
 !.gitignore
-!gradle.properties
+#!gradle.properties
 !build.gradle
 !gradlew
 !gradlew.bat
