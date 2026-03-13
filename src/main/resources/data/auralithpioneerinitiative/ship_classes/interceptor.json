@@ -1,0 +1,67 @@
+{
+  "id": "auralithpioneerinitiative:interceptor",
+  "display_name": "Interceptor",
+  "class": "interceptor",
+  "mass": 8000,
+  "max_hull": 200,
+  "max_shield": 50,
+  "max_fuel": 100,
+  "max_eu": 10000,
+  "hardpoints": 0,
+
+  "palette": {
+    "#": { "block": "auralithpioneerinitiative:ship_core", "is_controller": true },
+    "H": { "block": "modern_industrialization:clean_stainless_steel_machine_casing" },
+    "C": { "block": "minecraft:glass" },
+    "E": { "block": "modern_industrialization:ev_storage_unit" }
+  },
+
+  "layers": [
+    [
+      "   H   ",
+      " HHHHH ",
+      "HHH#HHH",
+      " HHHHH ",
+      "   H   "
+    ],
+    [
+      "  HHH  ",
+      " HCCCCH",
+      "HHCHCCH",
+      " HCCCCH",
+      "  HHH  "
+    ],
+    [
+      "   H   ",
+      " HHHHH ",
+      "HHEHHHH",
+      " HHHHH ",
+      "   H   "
+    ]
+  ],
+
+  "cockpit_offset": { "x": 0, "y": 1, "z": -2 },
+
+  "panels": [
+    {
+      "type": "auralithpioneerinitiative:cockpit_main",
+      "offset": { "x": 0.0, "y": 1.5, "z": -1.5 },
+      "facing": "NORTH"
+    },
+    {
+      "type": "auralithpioneerinitiative:nav_panel",
+      "offset": { "x": -1.0, "y": 1.5, "z": -1.0 },
+      "facing": "NORTH_WEST"
+    },
+    {
+      "type": "auralithpioneerinitiative:systems_panel",
+      "offset": { "x": 1.0, "y": 1.5, "z": -1.0 },
+      "facing": "NORTH_EAST"
+    }
+  ],
+
+  "animation_config": {
+    "animation_type": "engine_exhaust",
+    "offset": { "x": 0, "y": 0, "z": 2 }
+  }
+}

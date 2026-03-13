@@ -209,11 +209,11 @@ public final class SolarSystemRenderer
         ps.mulPose(new Quaternionf().rotationZ((float) Math.toRadians(current.axialTilt())));
         current.atmosphere().ifPresent(atmo ->
         {
-            ps.pushPose();
-            float as = ORBIT_PLANET_SIZE * atmo.scale();
-            ps.scale(as, as, as);
-            AtmosphereRenderer.render(ps, atmo, 0f, 1f, 0f);
-            ps.popPose();
+          ps.pushPose();
+          float as = ORBIT_PLANET_SIZE * atmo.scale();
+          ps.scale(as, as, as);
+          AtmosphereRenderer.render(ps, atmo, 0f, 1f, 0f);
+          ps.popPose();
         });
         current.rings().ifPresent(rings -> renderRings(ps, rings, ORBIT_PLANET_SIZE));
         ps.pushPose();
