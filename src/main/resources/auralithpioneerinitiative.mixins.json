@@ -7,7 +7,9 @@
     "Player.SwimPoseMixin"
   ],
   "client": [
-    "Rendering.SkyMixin"
+    "Rendering.SkyMixin",
+    "Client.MouseFlightMixin",
+    "Client.CameraShipMixin"
   ],
   "injectors": {
     "defaultRequire": 1

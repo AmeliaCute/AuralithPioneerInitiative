@@ -68,7 +68,6 @@ public class ShipCoreBlock extends BaseEntityBlock
         return null;
     }
 
-    // ── Interaction ───────────────────────────────────────────────────────────
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit)
     {

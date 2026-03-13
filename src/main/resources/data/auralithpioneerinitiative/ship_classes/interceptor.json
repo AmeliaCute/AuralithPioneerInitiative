@@ -8,9 +8,12 @@
   "max_fuel": 100,
   "max_eu": 10000,
   "hardpoints": 0,
+  "seat_char": "@",
+  "pilot_direction": "nord",
 
   "palette": {
     "#": { "block": "auralithpioneerinitiative:ship_core", "is_controller": true },
+    "@": { "block": "modern_industrialization:clean_stainless_steel_machine_casing" },
     "H": { "block": "modern_industrialization:clean_stainless_steel_machine_casing" },
     "C": { "block": "minecraft:glass" },
     "E": { "block": "modern_industrialization:ev_storage_unit" }
@@ -27,7 +30,7 @@
     [
       "  HHH  ",
       " HCCCCH",
-      "HHCHCCH",
+      "@HCHCCH",
       " HCCCCH",
       "  HHH  "
     ],
@@ -40,7 +43,7 @@
     ]
   ],
 
-  "cockpit_offset": { "x": 0, "y": 1, "z": -2 },
+  "cockpit_offset": { "x": -2, "y": 0, "z": 0 },
 
   "panels": [
     {

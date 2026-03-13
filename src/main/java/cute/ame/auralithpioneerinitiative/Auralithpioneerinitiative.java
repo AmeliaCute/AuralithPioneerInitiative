@@ -7,6 +7,7 @@ import cute.ame.auralithpioneerinitiative.Registrie.ModBlocks;
 import cute.ame.auralithpioneerinitiative.Registrie.ModItems;
 import cute.ame.auralithpioneerinitiative.Ship.Data.ShipDefinitionLoader;
 import cute.ame.auralithpioneerinitiative.Ship.Entity.ModEntities;
+import cute.ame.auralithpioneerinitiative.Ship.Network.FlightInputPacket;
 import cute.ame.auralithpioneerinitiative.Ship.Network.ShipSnapshotPacket;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -21,7 +22,7 @@ import org.slf4j.Logger;
 @Mod(Auralithpioneerinitiative.MODID)
 public class Auralithpioneerinitiative
 {
-  public static final String MODID = "auralithpioneerinitiative";
+  public static final String MODID  = "auralithpioneerinitiative";
   public static final Logger LOGGER = LogUtils.getLogger();
 
   public Auralithpioneerinitiative(IEventBus modEventBus, ModContainer modContainer)
@@ -42,7 +43,16 @@ public class Auralithpioneerinitiative
   {
     final PayloadRegistrar registrar = event.registrar(MODID);
 
-    registrar.playToClient(ShipSnapshotPacket.TYPE, ShipSnapshotPacket.STREAM_CODEC, ShipSnapshotPacket::handle
+    registrar.playToClient(
+      ShipSnapshotPacket.TYPE,
+      ShipSnapshotPacket.STREAM_CODEC,
+      ShipSnapshotPacket::handle
+    );
+
+    registrar.playToServer(
+      FlightInputPacket.TYPE,
+      FlightInputPacket.STREAM_CODEC,
+      FlightInputPacket::handle
     );
 
     LOGGER.debug("[Auralith] Registered network payloads");

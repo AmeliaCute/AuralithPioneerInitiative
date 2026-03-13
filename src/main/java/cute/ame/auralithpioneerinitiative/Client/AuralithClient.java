@@ -5,6 +5,7 @@ import cute.ame.auralithpioneerinitiative.Client.Dimension.SpaceDimensionEffect;
 import cute.ame.auralithpioneerinitiative.Data.PlanetTextureGenerator;
 import cute.ame.auralithpioneerinitiative.Loader.SolarSystemLoader;
 import cute.ame.auralithpioneerinitiative.Ship.Entity.ModEntities;
+import cute.ame.auralithpioneerinitiative.Ship.Input.FlightKeys;
 import cute.ame.auralithpioneerinitiative.Ship.Renderer.ShipClientCache;
 import cute.ame.auralithpioneerinitiative.Ship.Renderer.ShipEntityRenderer;
 import net.minecraft.resources.ResourceLocation;
@@ -14,6 +15,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.RegisterDimensionSpecialEffectsEvent;
+import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
 
 @EventBusSubscriber(modid = Auralithpioneerinitiative.MODID, value = Dist.CLIENT)
@@ -25,20 +27,29 @@ public final class AuralithClient
     public static void onRegisterReloadListeners(RegisterClientReloadListenersEvent event)
     {
         event.registerReloadListener(SolarSystemLoader.INSTANCE);
-        event.registerReloadListener((prepBarrier, resourceManager, prepProfiler, applyProfiler, prepExec, applyExec) -> prepBarrier.wait(null).thenRunAsync(PlanetTextureGenerator::invalidateAll, applyExec)
-        );
+        event.registerReloadListener((prepBarrier, resourceManager, prepProfiler, applyProfiler, prepExec, applyExec) ->
+            prepBarrier.wait(null).thenRunAsync(PlanetTextureGenerator::invalidateAll, applyExec));
     }
 
     @SubscribeEvent
     public static void onRegisterDimensionEffects(RegisterDimensionSpecialEffectsEvent event)
     {
-        event.register(ResourceLocation.fromNamespaceAndPath(Auralithpioneerinitiative.MODID, "space"), new SpaceDimensionEffect());
+        event.register(
+            ResourceLocation.fromNamespaceAndPath(Auralithpioneerinitiative.MODID, "space"),
+            new SpaceDimensionEffect());
     }
 
     @SubscribeEvent
     public static void onRegisterEntityRenderers(EntityRenderersEvent.RegisterRenderers event)
     {
         event.registerEntityRenderer(ModEntities.SHIP.get(), ShipEntityRenderer::new);
+    }
+
+    @SubscribeEvent
+    public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event)
+    {
+        for (var key : FlightKeys.ALL)
+            event.register(key);
     }
 
     @SubscribeEvent

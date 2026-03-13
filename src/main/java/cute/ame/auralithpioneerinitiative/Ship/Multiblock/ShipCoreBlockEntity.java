@@ -85,6 +85,7 @@ public class ShipCoreBlockEntity extends BlockEntity
         ship.setFuelLevel(1.0f);
         ship.setEuStored(def.maxEu());
         ship.setBlockSnapshot(snapshot);
+        ship.setShipRotation(def.computeInitialRotation());
         ship.moveTo(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
         level.addFreshEntity(ship);
 
@@ -125,10 +126,10 @@ public class ShipCoreBlockEntity extends BlockEntity
                     if (state.isAir()) continue;
 
                     result.add(new ShipSnapshotPacket.BlockEntry(
-                            worldPos.getX() - corePos.getX(),
-                            worldPos.getY() - corePos.getY(),
-                            worldPos.getZ() - corePos.getZ(),
-                            Block.getId(state)
+                        worldPos.getX() - corePos.getX(),
+                        worldPos.getY() - corePos.getY(),
+                        worldPos.getZ() - corePos.getZ(),
+                        Block.getId(state)
                     ));
                 }
             }
@@ -175,8 +176,8 @@ public class ShipCoreBlockEntity extends BlockEntity
 
                     BlockState state = blockOpt.get().defaultBlockState();
                     result.add(new ShipSnapshotPacket.BlockEntry(
-                            lx - ctrlX, ly - ctrlY, lz - ctrlZ,
-                            Block.getId(state)
+                        lx - ctrlX, ly - ctrlY, lz - ctrlZ,
+                        Block.getId(state)
                     ));
                 }
             }
@@ -226,7 +227,7 @@ public class ShipCoreBlockEntity extends BlockEntity
         super.loadAdditional(tag, registries);
         assembled = tag.getBoolean("assembled");
         snapshotFromWorld = tag.getBoolean("snapshotFromWorld");
-        if (tag.contains("shipDef"))    shipDefinitionId = ResourceLocation.parse(tag.getString("shipDef"));
-        if (tag.hasUUID("shipEntity"))  shipEntityUUID   = tag.getUUID("shipEntity");
+        if (tag.contains("shipDef")) shipDefinitionId = ResourceLocation.parse(tag.getString("shipDef"));
+        if (tag.hasUUID("shipEntity"))  shipEntityUUID = tag.getUUID("shipEntity");
     }
 }
