@@ -3,6 +3,8 @@ plugins {
     id 'maven-publish'
     id 'idea'
     id 'net.neoforged.moddev' version '2.0.116'
+
+    id 'org.sinytra.adapter.userdev' version '1.2.1-SNAPSHOT'
 }
 
 version = mod_version
@@ -151,6 +153,9 @@ dependencies {
     implementation "maven.modrinth:iris:1.8.12+1.21.1-neoforge"
 
     implementation "gg.amecute.auralithutilities:AuralithCore:1.1.2"
+
+    additionalRuntimeClasspath "org.sinytra:connector:2.0.0-beta.9+1.21.1"
+    runtimeOnly "org.sinytra.forgified-fabric-api:forgified-fabric-api:0.115.6+2.1.4+1.21.1"
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.

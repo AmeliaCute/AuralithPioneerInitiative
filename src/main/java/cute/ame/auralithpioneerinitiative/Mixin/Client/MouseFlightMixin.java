@@ -24,9 +24,9 @@ public abstract class MouseFlightMixin
     Minecraft mc = Minecraft.getInstance();
     if (mc.player == null) return;
     if (!(mc.player.getVehicle() instanceof ShipEntity)) return;
-    if (FlightCameraState.isFreeLook()) return; // let vanilla handle camera
+    if (FlightCameraState.isFreeLook()) return;
 
-    FlightCameraState.addMouseDelta(accumulatedDX * 2.5f, accumulatedDY * 1.5f);
+    FlightCameraState.addMouseDelta(accumulatedDX * 5f, accumulatedDY * 5f);
 
     accumulatedDX = 0.0;
     accumulatedDY = 0.0;
