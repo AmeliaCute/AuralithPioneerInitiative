@@ -3,9 +3,7 @@ package cute.ame.auralithpioneerinitiative.Ship.Renderer;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexBuffer;
-import cute.ame.auralithpioneerinitiative.Auralithpioneerinitiative;
 import cute.ame.auralithpioneerinitiative.Ship.Entity.ShipEntity;
-import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.culling.Frustum;
@@ -17,7 +15,6 @@ import net.minecraft.world.phys.AABB;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.joml.Matrix4f;
-import org.joml.Quaternionf;
 
 @OnlyIn(Dist.CLIENT)
 public class ShipEntityRenderer extends EntityRenderer<ShipEntity>
@@ -39,8 +36,7 @@ public class ShipEntityRenderer extends EntityRenderer<ShipEntity>
         ShipClientCache.drainUploadQueue();
 
         BakedShipMesh mesh = ShipClientCache.getMesh(entity.getUUID());
-        if (mesh == null) return false;
-        if (!mesh.isReady()) return false;
+        if (mesh == null || !mesh.isReady()) return false;
 
         AABB worldBounds = mesh.getLocalBounds().move(entity.position());
         return frustum.isVisible(worldBounds);
@@ -54,20 +50,25 @@ public class ShipEntityRenderer extends EntityRenderer<ShipEntity>
 
         int lod = ShipLodManager.getLODLevel(entity, this.entityRenderDispatcher.camera);
         VertexBuffer vbo = mesh.getBuffer(lod);
-        if (vbo == null) return; //TODO: Implement billboard or maybe just not implement it, cause it already fast
+        if (vbo == null) return;
+        if (bufferSource instanceof MultiBufferSource.BufferSource bs) bs.endBatch();
 
         poseStack.pushPose();
+        poseStack.mulPose(entity.getShipRotation());
 
-        Quaternionf rot = entity.getShipRotation();
-        poseStack.mulPose(rot);
-
-        Matrix4f modelView = new Matrix4f(poseStack.last().pose());
+        Matrix4f modelView = new Matrix4f(RenderSystem.getModelViewMatrix()).mul(poseStack.last().pose());
         Matrix4f projection = RenderSystem.getProjectionMatrix();
+
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthMask(true);
+        RenderSystem.enableCull();
+        RenderSystem.disableBlend();
 
         if (lod <= 1)
         {
             RenderSystem.setShader(GameRenderer::getRendertypeSolidShader);
             RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_BLOCKS);
+            RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
             vbo.bind();
             vbo.drawWithShader(modelView, projection, RenderSystem.getShader());
             VertexBuffer.unbind();
