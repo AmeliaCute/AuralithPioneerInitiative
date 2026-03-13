@@ -4,6 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexBuffer;
 import cute.ame.auralithpioneerinitiative.Ship.Entity.ShipEntity;
+import cute.ame.auralithpioneerinitiative.Utils.ShaderHelper;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.culling.Frustum;
@@ -49,7 +50,8 @@ public class ShipEntityRenderer extends EntityRenderer<ShipEntity>
         if (mesh == null || !mesh.isReady()) return;
 
         int lod = ShipLodManager.getLODLevel(entity, this.entityRenderDispatcher.camera);
-        VertexBuffer vbo = mesh.getBuffer(lod);
+        boolean shadersActive = ShaderHelper.shadersActive();
+        VertexBuffer vbo = mesh.getBuffer(lod, shadersActive);
         if (vbo == null) return;
         if (bufferSource instanceof MultiBufferSource.BufferSource bs) bs.endBatch();
 
@@ -66,7 +68,9 @@ public class ShipEntityRenderer extends EntityRenderer<ShipEntity>
 
         if (lod <= 1)
         {
-            RenderSystem.setShader(GameRenderer::getRendertypeSolidShader);
+            if (shadersActive) RenderSystem.setShader(GameRenderer::getRendertypeSolidShader);
+            else RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
+
             RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_BLOCKS);
             RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
             vbo.bind();

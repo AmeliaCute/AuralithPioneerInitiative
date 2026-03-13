@@ -13,40 +13,41 @@ public class BakedShipMesh implements AutoCloseable
     public static final double LOD1_MAX_DIST = 256.0;
     public static final double LOD2_MAX_DIST = 512.0;
 
-    private final @Nullable VertexBuffer solidBuffer;
-
+    private final @Nullable VertexBuffer shaderBuffer;
+    private final @Nullable VertexBuffer vanillaBuffer;
     private final @Nullable VertexBuffer hullBuffer;
 
     private final AABB localBounds;
-
     private final int blockCount;
 
-    public BakedShipMesh(@Nullable VertexBuffer solidBuffer, @Nullable VertexBuffer hullBuffer, AABB localBounds, int blockCount)
+    public BakedShipMesh(@Nullable VertexBuffer shaderBuffer, @Nullable VertexBuffer vanillaBuffer, @Nullable VertexBuffer hullBuffer, AABB localBounds, int blockCount)
     {
-        this.solidBuffer = solidBuffer;
-        this.hullBuffer = hullBuffer;
-        this.localBounds = localBounds;
-        this.blockCount = blockCount;
+        this.shaderBuffer  = shaderBuffer;
+        this.vanillaBuffer = vanillaBuffer;
+        this.hullBuffer    = hullBuffer;
+        this.localBounds   = localBounds;
+        this.blockCount    = blockCount;
     }
 
-    public boolean isReady() { return solidBuffer != null; }
+    public boolean isReady() { return shaderBuffer != null || vanillaBuffer != null; }
     public AABB getLocalBounds() { return localBounds; }
-    public int getBlockCount() { return blockCount; }
+    public int getBlockCount() { return blockCount;  }
 
-    public @Nullable VertexBuffer getBuffer(int lodLevel)
+    public @Nullable VertexBuffer getBuffer(int lodLevel, boolean shadersActive)
     {
         return switch (lodLevel)
         {
-            case 0, 1 -> solidBuffer;
-            case 2    -> hullBuffer;
-            default   -> null;
+            case 0, 1 -> shadersActive ? shaderBuffer : vanillaBuffer;
+            case 2 -> hullBuffer;
+            default -> null;
         };
     }
 
     @Override
     public void close()
     {
-        if (solidBuffer != null) solidBuffer.close();
-        if (hullBuffer  != null) hullBuffer.close();
+        if (shaderBuffer != null) shaderBuffer.close();
+        if (vanillaBuffer != null) vanillaBuffer.close();
+        if (hullBuffer != null) hullBuffer.close();
     }
 }

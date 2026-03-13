@@ -6,7 +6,6 @@ import cute.ame.auralithpioneerinitiative.Ship.Network.ShipSnapshotPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.renderer.block.model.BakedQuad;
-import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.state.BlockState;
@@ -29,9 +28,9 @@ public final class ShipMeshBaker
 {
     private ShipMeshBaker() {}
 
-    private static final Executor BAKER_THREAD = Executors.newSingleThreadExecutor(r -> { Thread t = new Thread(r, "auralith-ship-baker"); t.setDaemon(true); return t; });
+    private static final Executor BAKER_THREAD = Executors.newSingleThreadExecutor(r -> {Thread t = new Thread(r, "auralith-ship-baker");t.setDaemon(true);return t;});
 
-    private static final int BYTES_PER_QUAD = 128;
+    private static final int BYTES_PER_QUAD  = 128;
     private static final int QUADS_PER_BLOCK = 6;
 
     public static void bakeAsync(UUID uuid, List<ShipSnapshotPacket.BlockEntry> blocks)
@@ -39,7 +38,7 @@ public final class ShipMeshBaker
         if (blocks.isEmpty())
         {
             Auralithpioneerinitiative.LOGGER.warn("[Auralith] ShipMeshBaker: snapshot is empty for ship {}", uuid);
-            ShipClientCache.submitUpload(uuid, () -> ShipClientCache.storeMesh(uuid, new BakedShipMesh(null, null, AABB.ofSize(Vec3.ZERO,0,0,1), 0)));
+            ShipClientCache.submitUpload(uuid, () -> ShipClientCache.storeMesh(uuid, new BakedShipMesh(null, null, null, AABB.ofSize(Vec3.ZERO, 0, 0, 1), 0)));
             return;
         }
 
@@ -58,20 +57,20 @@ public final class ShipMeshBaker
                 minZ = Math.min(minZ, b.relZ()); maxZ = Math.max(maxZ, b.relZ());
             }
             final AABB localBounds = new AABB(minX, minY, minZ, maxX + 1.0, maxY + 1.0, maxZ + 1.0);
-            final int blockCount = blocks.size();
+            final int  blockCount  = blocks.size();
 
-            // CPU SIDE
-            @Nullable MeshData solidMesh = bakeSolid(blocks, posSet, capacityEstimate);
-
-            // GPU SIDE
+            @Nullable MeshData shaderMesh = bakeShader(blocks, posSet, capacityEstimate);
+            @Nullable MeshData vanillaMesh = bakeVanilla(blocks, posSet, capacityEstimate);
             @Nullable MeshData hullMesh = bakeHullBox(localBounds);
 
-            // SCHEDULE GPU UPLOAD
             ShipClientCache.submitUpload(uuid, () ->
             {
-                @Nullable VertexBuffer solidVbo = uploadMesh(solidMesh);
-                @Nullable VertexBuffer hullVbo  = uploadMesh(hullMesh);
-                ShipClientCache.storeMesh(uuid,new BakedShipMesh(solidVbo, hullVbo, localBounds, blockCount));
+                @Nullable VertexBuffer shaderVbo = uploadMesh(shaderMesh);
+                @Nullable VertexBuffer vanillaVbo = uploadMesh(vanillaMesh);
+                @Nullable VertexBuffer hullVbo = uploadMesh(hullMesh);
+
+                ShipClientCache.storeMesh(uuid, new BakedShipMesh(shaderVbo, vanillaVbo, hullVbo, localBounds, blockCount));
+
                 Auralithpioneerinitiative.LOGGER.info("[Auralith] Ship mesh baked: {} blocks for ship {}", blockCount, uuid);
             });
 
@@ -82,14 +81,13 @@ public final class ShipMeshBaker
         });
     }
 
-    private static @Nullable MeshData bakeSolid(List<ShipSnapshotPacket.BlockEntry> blocks, Set<Long> posSet, int capacityEstimate)
+    private static @Nullable MeshData bakeShader(List<ShipSnapshotPacket.BlockEntry> blocks, Set<Long> posSet, int capacityEstimate)
     {
         BlockRenderDispatcher brd = Minecraft.getInstance().getBlockRenderer();
         RandomSource random = RandomSource.createNewThreadLocalInstance();
 
         ByteBufferBuilder storage = new ByteBufferBuilder(capacityEstimate);
         BufferBuilder builder = new BufferBuilder(storage, VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
-
         boolean anyQuads = false;
 
         for (ShipSnapshotPacket.BlockEntry entry : blocks)
@@ -97,36 +95,107 @@ public final class ShipMeshBaker
             BlockState state = entry.resolveState();
             if (state.isAir()) continue;
 
-            var model = brd.getBlockModel(state);
+            var   model = brd.getBlockModel(state);
             float ox = entry.relX(), oy = entry.relY(), oz = entry.relZ();
 
             for (Direction dir : Direction.values())
             {
-                int nx = entry.relX() + dir.getStepX();
-                int ny = entry.relY() + dir.getStepY();
-                int nz = entry.relZ() + dir.getStepZ();
+                if (posSet.contains(packPos(entry.relX() + dir.getStepX(), entry.relY() + dir.getStepY(), entry.relZ() + dir.getStepZ()))) continue;
 
-                if (posSet.contains(packPos(nx, ny, nz))) continue; // occluded
-
-                List<BakedQuad> quads = model.getQuads(state, dir, random);
-                for (BakedQuad quad : quads)
+                for (BakedQuad quad : model.getQuads(state, dir, random))
                 {
-                    emitQuad(builder, quad, ox, oy, oz, dir);
+                    emitQuadBlock(builder, quad, ox, oy, oz, dir);
                     anyQuads = true;
                 }
             }
-
-            List<BakedQuad> nullQuads = model.getQuads(state, null, random);
-            for (BakedQuad quad : nullQuads)
+            for (BakedQuad quad : model.getQuads(state, null, random))
             {
-                emitQuad(builder, quad, ox, oy, oz, Direction.UP);
+                emitQuadBlock(builder, quad, ox, oy, oz, Direction.UP);
                 anyQuads = true;
             }
         }
 
         if (!anyQuads) { storage.close(); return null; }
-
         return builder.build();
+    }
+
+    private static void emitQuadBlock(BufferBuilder builder, BakedQuad quad, float ox, float oy, float oz, Direction face)
+    {
+        int[] vd = quad.getVertices();
+        float nx = face.getStepX(), ny = face.getStepY(), nz = face.getStepZ();
+
+        for (int i = 0; i < 4; i++)
+        {
+            int base = i * 8;
+            float x = Float.intBitsToFloat(vd[base    ]) + ox;
+            float y = Float.intBitsToFloat(vd[base + 1]) + oy;
+            float z = Float.intBitsToFloat(vd[base + 2]) + oz;
+            int   argb = vd[base + 3];
+            float u = Float.intBitsToFloat(vd[base + 4]);
+            float v = Float.intBitsToFloat(vd[base + 5]);
+
+            int qa = (argb >> 24) & 0xFF;
+            int qr = (argb >> 16) & 0xFF;
+            int qg = (argb >>  8) & 0xFF;
+            int qb =  argb & 0xFF;
+
+            builder.addVertex(x, y, z).setColor(qr, qg, qb, qa).setUv(u, v).setUv2(240, 240).setNormal(nx, ny, nz);
+        }
+    }
+
+    private static @Nullable MeshData bakeVanilla(List<ShipSnapshotPacket.BlockEntry> blocks, Set<Long> posSet, int capacityEstimate)
+    {
+        BlockRenderDispatcher brd = Minecraft.getInstance().getBlockRenderer();
+        RandomSource random = RandomSource.createNewThreadLocalInstance();
+
+        ByteBufferBuilder storage = new ByteBufferBuilder(capacityEstimate);
+        BufferBuilder builder = new BufferBuilder(storage, VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+        boolean anyQuads = false;
+
+        for (ShipSnapshotPacket.BlockEntry entry : blocks)
+        {
+            BlockState state = entry.resolveState();
+            if (state.isAir()) continue;
+
+            var   model = brd.getBlockModel(state);
+            float ox = entry.relX(), oy = entry.relY(), oz = entry.relZ();
+
+            for (Direction dir : Direction.values())
+            {
+                if (posSet.contains(packPos(entry.relX() + dir.getStepX(), entry.relY() + dir.getStepY(), entry.relZ() + dir.getStepZ()))) continue;
+
+                for (BakedQuad quad : model.getQuads(state, dir, random))
+                {
+                    emitQuadVanilla(builder, quad, ox, oy, oz);
+                    anyQuads = true;
+                }
+            }
+            for (BakedQuad quad : model.getQuads(state, null, random))
+            {
+                emitQuadVanilla(builder, quad, ox, oy, oz);
+                anyQuads = true;
+            }
+        }
+
+        if (!anyQuads) { storage.close(); return null; }
+        return builder.build();
+    }
+
+    private static void emitQuadVanilla(BufferBuilder builder, BakedQuad quad, float ox, float oy, float oz)
+    {
+        int[] vd = quad.getVertices();
+
+        for (int i = 0; i < 4; i++)
+        {
+            int   base = i * 8;
+            float x = Float.intBitsToFloat(vd[base ]) + ox;
+            float y = Float.intBitsToFloat(vd[base + 1]) + oy;
+            float z = Float.intBitsToFloat(vd[base + 2]) + oz;
+            float u = Float.intBitsToFloat(vd[base + 4]);
+            float v = Float.intBitsToFloat(vd[base + 5]);
+
+            builder.addVertex(x, y, z).setUv(u, v).setColor(255, 255, 255, 255);
+        }
     }
 
     private static @Nullable MeshData bakeHullBox(AABB box)
@@ -138,7 +207,6 @@ public final class ShipMeshBaker
         float x1 = (float) box.maxX, y1 = (float) box.maxY, z1 = (float) box.maxZ;
         int r = 120, g = 140, b = 160, a = 200;
 
-        // -Y face
         builder.addVertex(x0,y0,z0).setColor(r,g,b,a);
         builder.addVertex(x1,y0,z0).setColor(r,g,b,a);
         builder.addVertex(x1,y0,z1).setColor(r,g,b,a);
@@ -172,30 +240,6 @@ public final class ShipMeshBaker
         return builder.build();
     }
 
-    private static void emitQuad(BufferBuilder builder, BakedQuad quad, float ox, float oy, float oz, Direction face)
-    {
-        int[] vd = quad.getVertices(); // 32 ints
-        float nx = face.getStepX(), ny = face.getStepY(), nz = face.getStepZ();
-
-        for (int i = 0; i < 4; i++)
-        {
-            int base = i * 8;
-            float x = Float.intBitsToFloat(vd[base    ]) + ox;
-            float y = Float.intBitsToFloat(vd[base + 1]) + oy;
-            float z = Float.intBitsToFloat(vd[base + 2]) + oz;
-            int argb = vd[base + 3];
-            float u  = Float.intBitsToFloat(vd[base + 4]);
-            float v  = Float.intBitsToFloat(vd[base + 5]);
-
-            int qa = (argb >> 24) & 0xFF;
-            int qr = (argb >> 16) & 0xFF;
-            int qg = (argb >>  8) & 0xFF;
-            int qb =  argb        & 0xFF;
-
-            builder.addVertex(x, y, z).setColor(qr, qg, qb, qa).setUv(u, v).setUv2(240, 240).setNormal(nx, ny, nz);
-        }
-    }
-
     private static @Nullable VertexBuffer uploadMesh(@Nullable MeshData mesh)
     {
         if (mesh == null) return null;
@@ -214,7 +258,6 @@ public final class ShipMeshBaker
         return set;
     }
 
-    // if needed increase from 2048 to 4096
     private static long packPos(int x, int y, int z)
     {
         return ((long)(x + 2048) & 0xFFFF) | (((long)(y + 2048) & 0xFFFF) << 16) | (((long)(z + 2048) & 0xFFFF) << 32);
