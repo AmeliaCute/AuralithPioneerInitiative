@@ -1,11 +1,14 @@
 package cute.ame.auralithpioneerinitiative.Ship.Network;
 
 import cute.ame.auralithpioneerinitiative.Auralithpioneerinitiative;
+import cute.ame.auralithpioneerinitiative.Ship.Entity.ShipEntity;
 import cute.ame.auralithpioneerinitiative.Ship.Renderer.ShipClientCache;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.api.distmarker.Dist;
@@ -26,8 +29,7 @@ public record ShipSnapshotPacket(UUID shipUUID, List<BlockEntry> blocks) impleme
         }
     }
 
-    public static final Type<ShipSnapshotPacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Auralithpioneerinitiative.MODID, "ship_snapshot")
-    );
+    public static final Type<ShipSnapshotPacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Auralithpioneerinitiative.MODID, "ship_snapshot"));
 
     public static final StreamCodec<FriendlyByteBuf, ShipSnapshotPacket> STREAM_CODEC = StreamCodec.of(ShipSnapshotPacket::encode, ShipSnapshotPacket::decode);
 
@@ -50,14 +52,14 @@ public record ShipSnapshotPacket(UUID shipUUID, List<BlockEntry> blocks) impleme
 
     private static ShipSnapshotPacket decode(FriendlyByteBuf buf)
     {
-        UUID uuid = new UUID(buf.readLong(), buf.readLong());
-        int count = buf.readVarInt();
+        UUID uuid  = new UUID(buf.readLong(), buf.readLong());
+        int  count = buf.readVarInt();
         List<BlockEntry> entries = new ArrayList<>(count);
         for (int i = 0; i < count; i++)
         {
-            int x = buf.readShort();
-            int y = buf.readShort();
-            int z = buf.readShort();
+            int x  = buf.readShort();
+            int y  = buf.readShort();
+            int z  = buf.readShort();
             int id = buf.readVarInt();
             entries.add(new BlockEntry(x, y, z, id));
         }
@@ -67,6 +69,21 @@ public record ShipSnapshotPacket(UUID shipUUID, List<BlockEntry> blocks) impleme
     @OnlyIn(Dist.CLIENT)
     public static void handle(ShipSnapshotPacket packet, IPayloadContext ctx)
     {
-        ctx.enqueueWork(() -> ShipClientCache.onSnapshotReceived(packet.shipUUID(), packet.blocks()));
+        ctx.enqueueWork(() ->
+        {
+            ShipClientCache.onSnapshotReceived(packet.shipUUID(), packet.blocks());
+
+            if (Minecraft.getInstance().level != null)
+            {
+                for (Entity e : Minecraft.getInstance().level.entitiesForRendering())
+                {
+                    if (e instanceof ShipEntity ship && ship.getUUID().equals(packet.shipUUID()))
+                    {
+                        ship.setBlockSnapshot(packet.blocks());
+                        break;
+                    }
+                }
+            }
+        });
     }
 }

@@ -19,6 +19,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.joml.Quaternionf;
@@ -31,24 +32,27 @@ import java.util.UUID;
 
 public class ShipEntity extends Entity
 {
-    public static final int SUBSYSTEM_ENGINE  = 0x01;
+    public static final int SUBSYSTEM_ENGINE = 0x01;
     public static final int SUBSYSTEM_REACTOR = 0x02;
     public static final int SUBSYSTEM_SHIELDS = 0x04;
     public static final int SUBSYSTEM_WEAPONS = 0x08;
-    public static final int SUBSYSTEM_CARGO   = 0x10;
+    public static final int SUBSYSTEM_CARGO = 0x10;
 
-    private static final EntityDataAccessor<Float>           DATA_HULL_INTEGRITY  = SynchedEntityData.defineId(ShipEntity.class, EntityDataSerializers.FLOAT);
-    private static final EntityDataAccessor<Float>           DATA_SHIELD_STRENGTH = SynchedEntityData.defineId(ShipEntity.class, EntityDataSerializers.FLOAT);
-    private static final EntityDataAccessor<Float>           DATA_FUEL_LEVEL      = SynchedEntityData.defineId(ShipEntity.class, EntityDataSerializers.FLOAT);
-    private static final EntityDataAccessor<Long>            DATA_EU_STORED       = SynchedEntityData.defineId(ShipEntity.class, EntityDataSerializers.LONG);
-    private static final EntityDataAccessor<String>          DATA_SHIP_CLASS      = SynchedEntityData.defineId(ShipEntity.class, EntityDataSerializers.STRING);
-    private static final EntityDataAccessor<Optional<UUID>>  DATA_PILOT_UUID      = SynchedEntityData.defineId(ShipEntity.class, EntityDataSerializers.OPTIONAL_UUID);
-    private static final EntityDataAccessor<Integer>         DATA_SUBSYSTEM_STATE = SynchedEntityData.defineId(ShipEntity.class, EntityDataSerializers.INT);
-    private static final EntityDataAccessor<Quaternionf>     DATA_ROTATION        = SynchedEntityData.defineId(ShipEntity.class, ModEntities.QUATERNIONF);
+    private static final double SEAT_REACH = 6.0;
+    private static final double SEAT_HIT_RADIUS = 1.8;
 
-    private final ShipPhysics physics        = new ShipPhysics();
-    private FlightInput       lastFlightInput = FlightInput.IDLE;
-    private int               flightInputAge  = 0;
+    private static final EntityDataAccessor<Float> DATA_HULL_INTEGRITY  = SynchedEntityData.defineId(ShipEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Float> DATA_SHIELD_STRENGTH = SynchedEntityData.defineId(ShipEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Float> DATA_FUEL_LEVEL = SynchedEntityData.defineId(ShipEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Long> DATA_EU_STORED = SynchedEntityData.defineId(ShipEntity.class, EntityDataSerializers.LONG);
+    private static final EntityDataAccessor<String> DATA_SHIP_CLASS = SynchedEntityData.defineId(ShipEntity.class, EntityDataSerializers.STRING);
+    private static final EntityDataAccessor<Optional<UUID>> DATA_PILOT_UUID = SynchedEntityData.defineId(ShipEntity.class, EntityDataSerializers.OPTIONAL_UUID);
+    private static final EntityDataAccessor<Integer> DATA_SUBSYSTEM_STATE = SynchedEntityData.defineId(ShipEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Quaternionf> DATA_ROTATION = SynchedEntityData.defineId(ShipEntity.class, ModEntities.QUATERNIONF);
+
+    private final ShipPhysics physics = new ShipPhysics();
+    private FlightInput lastFlightInput = FlightInput.IDLE;
+    private int flightInputAge  = 0;
 
     private List<ShipSnapshotPacket.BlockEntry> blockSnapshot = new ArrayList<>();
 
@@ -62,6 +66,9 @@ public class ShipEntity extends Entity
     public boolean isPickable() { return true; }
 
     @Override
+    public boolean canBeCollidedWith() { return true; }
+
+    @Override
     public net.minecraft.world.entity.EntityDimensions getDimensions(net.minecraft.world.entity.Pose pose)
     {
         return getDefinition()
@@ -71,27 +78,96 @@ public class ShipEntity extends Entity
                 float w = Math.max(1f, Math.max(sz[0], sz[2]));
                 float h = Math.max(1f, sz[1]);
                 return net.minecraft.world.entity.EntityDimensions.scalable(w, h);
-            })
-            .orElse(net.minecraft.world.entity.EntityDimensions.scalable(3f, 2f));
+            }).orElse(net.minecraft.world.entity.EntityDimensions.scalable(3f, 2f));
+    }
+
+    private AABB computeRotatedAABB()
+    {
+        float localMinX, localMinY, localMinZ;
+        float localMaxX, localMaxY, localMaxZ;
+
+        if (!blockSnapshot.isEmpty())
+        {
+            localMinX = localMinY = localMinZ =  Float.MAX_VALUE;
+            localMaxX = localMaxY = localMaxZ = -Float.MAX_VALUE;
+
+            for (ShipSnapshotPacket.BlockEntry e : blockSnapshot)
+            {
+                if (e.relX() < localMinX) localMinX = e.relX();
+                if (e.relX() + 1 > localMaxX) localMaxX = e.relX() + 1;
+                if (e.relY() < localMinY) localMinY = e.relY();
+                if (e.relY() + 1 > localMaxY) localMaxY = e.relY() + 1;
+                if (e.relZ() < localMinZ) localMinZ = e.relZ();
+                if (e.relZ() + 1 > localMaxZ) localMaxZ = e.relZ() + 1;
+            }
+        }
+        else
+        {
+            Optional<ShipDefinition> defOpt = getDefinition();
+            if (defOpt.isEmpty())
+            {
+                double x = getX(), y = getY(), z = getZ();
+                return new AABB(x - 1.5, y, z - 1.5, x + 1.5, y + 2, z + 1.5);
+            }
+            int[] sz = defOpt.get().computeSize();
+            localMinX = -sz[0] * 0.5f; localMaxX = sz[0] * 0.5f;
+            localMinY = 0; localMaxY = sz[1];
+            localMinZ = -sz[2] * 0.5f; localMaxZ = sz[2] * 0.5f;
+        }
+
+        float[][] corners = {
+            { localMinX, localMinY, localMinZ },
+            { localMaxX, localMinY, localMinZ },
+            { localMinX, localMaxY, localMinZ },
+            { localMaxX, localMaxY, localMinZ },
+            { localMinX, localMinY, localMaxZ },
+            { localMaxX, localMinY, localMaxZ },
+            { localMinX, localMaxY, localMaxZ },
+            { localMaxX, localMaxY, localMaxZ }
+        };
+
+        Quaternionf q    = getShipRotation();
+        float minX =  Float.MAX_VALUE, minY =  Float.MAX_VALUE, minZ =  Float.MAX_VALUE;
+        float maxX = -Float.MAX_VALUE, maxY = -Float.MAX_VALUE, maxZ = -Float.MAX_VALUE;
+
+        for (float[] c : corners)
+        {
+            Vector3f v = new Vector3f(c[0], c[1], c[2]);
+            q.transform(v);
+            if (v.x < minX) minX = v.x;
+            if (v.x > maxX) maxX = v.x;
+            if (v.y < minY) minY = v.y;
+            if (v.y > maxY) maxY = v.y;
+            if (v.z < minZ) minZ = v.z;
+            if (v.z > maxZ) maxZ = v.z;
+        }
+
+        double ox = getX(), oy = getY(), oz = getZ();
+        return new AABB(
+            ox + minX, oy + minY, oz + minZ,
+            ox + maxX, oy + maxY, oz + maxZ
+        );
+    }
+
+    private void refreshBB()
+    {
+        setBoundingBox(computeRotatedAABB());
     }
 
     @Override
-    protected void defineSynchedData(SynchedEntityData.Builder builder)
+    public void lerpTo(double x, double y, double z, float yRot, float xRot, int steps)
     {
-        builder.define(DATA_HULL_INTEGRITY, 1.0f);
-        builder.define(DATA_SHIELD_STRENGTH, 1.0f);
-        builder.define(DATA_FUEL_LEVEL, 1.0f);
-        builder.define(DATA_EU_STORED, 0L);
-        builder.define(DATA_SHIP_CLASS, "auralithpioneerinitiative:unknown");
-        builder.define(DATA_PILOT_UUID, Optional.empty());
-        builder.define(DATA_SUBSYSTEM_STATE, 0xFF);
-        builder.define(DATA_ROTATION, new Quaternionf());
+        setPos(x, y, z);
+        setRot(yRot, xRot);
+        refreshBB();
     }
 
     @Override
     public void tick()
     {
         super.tick();
+        refreshBB();
+
         if (!level().isClientSide()) serverTick();
     }
 
@@ -117,29 +193,55 @@ public class ShipEntity extends Entity
 
         if (getPilotUUID().isPresent())
         {
-            sp.sendSystemMessage(Component.literal("[Auralith] This ship already has a pilot."));
+            sp.sendSystemMessage(Component.literal("[Auralith] Ce vaisseau a déjà un pilote."));
             return InteractionResult.FAIL;
         }
 
+        Optional<ShipDefinition> defOpt = getDefinition();
+        if (defOpt.isPresent())
+        {
+            Vec3 seatWorld = getSeatWorldPos(defOpt.get());
+            Vec3 eye = player.getEyePosition();
+            Vec3 lookEnd = eye.add(player.getLookAngle().scale(SEAT_REACH));
+            double dist = distRayToPoint(eye, lookEnd, seatWorld);
+
+            if (dist > SEAT_HIT_RADIUS && player.distanceTo(this) > SEAT_REACH)
+            {
+                sp.sendSystemMessage(Component.literal("[Auralith] Visez le siège du cockpit pour embarquer."));
+                return InteractionResult.PASS;
+            }
+        }
+
         getDefinition().ifPresent(physics::loadFromDefinition);
-
         setPilotUUID(sp.getUUID());
-        sp.startRiding(this, /*force=*/true);
+        sp.startRiding(this, true);
 
-        String shipName = getDefinition().map(ShipDefinition::displayName).orElse("Unknown Ship");
-        sp.sendSystemMessage(Component.literal("[Auralith] Piloting " + shipName + " — WASD/Space/LCtrl: thrust | ↑↓←→ Q/E: rotate | LShift: boost | R: dismount"));
-
-        Auralithpioneerinitiative.LOGGER.info("[Auralith] {} boarded ship {} ({})",
-            sp.getScoreboardName(), getUUID(), shipName);
+        String shipName = getDefinition().map(ShipDefinition::displayName).orElse("Vaisseau inconnu");
+        sp.sendSystemMessage(Component.literal("[Auralith] Pilotage de " + shipName + " - WASD/Espace/LCtrl : poussée | ↑↓←→ Q/E : rotation | LShift : boost | R : quitter"));
+        Auralithpioneerinitiative.LOGGER.info("[Auralith] {} a embarqué sur {} ({})", sp.getScoreboardName(), getUUID(), shipName);
 
         return InteractionResult.CONSUME;
+    }
+
+    public Vec3 getSeatWorldPos(ShipDefinition def)
+    {
+        Vec3 local = def.findCockpitOffset().toVec3();
+        Vector3f v = new Vector3f((float) local.x, (float) local.y + 0.5f, (float) local.z);
+        getShipRotation().transform(v);
+        return new Vec3(getX() + v.x, getY() + v.y, getZ() + v.z);
+    }
+
+    private static double distRayToPoint(Vec3 a, Vec3 b, Vec3 p)
+    {
+        Vec3 ab = b.subtract(a);
+        double t  = Math.max(0.0, Math.min(1.0, p.subtract(a).dot(ab) / Math.max(ab.dot(ab), 1e-9)));
+        return p.distanceTo(a.add(ab.scale(t)));
     }
 
     @Override
     protected void positionRider(Entity passenger, MoveFunction moveFunction)
     {
         if (!hasPassenger(passenger)) return;
-
         Vec3 offset = getDefinition().map(def -> def.findCockpitOffset().toVec3()).orElse(new Vec3(0.0, 1.0, 0.0));
 
         Vector3f rotated = new Vector3f((float) offset.x, (float) offset.y, (float) offset.z);
@@ -156,9 +258,21 @@ public class ShipEntity extends Entity
         {
             setPilotUUID(null);
             lastFlightInput = FlightInput.IDLE;
-            physics.setLinearVelocity(physics.getLinearVelocity());
-            Auralithpioneerinitiative.LOGGER.info("[Auralith] {} dismounted ship {}", p.getScoreboardName(), getUUID());
+            Auralithpioneerinitiative.LOGGER.debug("[Auralith] {} a quitté le vaisseau {}", p.getScoreboardName(), getUUID());
         }
+    }
+
+    @Override
+    protected void defineSynchedData(SynchedEntityData.Builder builder)
+    {
+        builder.define(DATA_HULL_INTEGRITY, 1.0f);
+        builder.define(DATA_SHIELD_STRENGTH, 1.0f);
+        builder.define(DATA_FUEL_LEVEL, 1.0f);
+        builder.define(DATA_EU_STORED, 0L);
+        builder.define(DATA_SHIP_CLASS, "auralithpioneerinitiative:unknown");
+        builder.define(DATA_PILOT_UUID, Optional.empty());
+        builder.define(DATA_SUBSYSTEM_STATE, 0xFF);
+        builder.define(DATA_ROTATION, new Quaternionf());
     }
 
     public float getHullIntegrity() { return entityData.get(DATA_HULL_INTEGRITY); }
@@ -166,18 +280,23 @@ public class ShipEntity extends Entity
     public float getFuelLevel() { return entityData.get(DATA_FUEL_LEVEL); }
     public long getEuStored() { return entityData.get(DATA_EU_STORED); }
     public String getShipClassId() { return entityData.get(DATA_SHIP_CLASS); }
-    public Optional<UUID> getPilotUUID(){ return entityData.get(DATA_PILOT_UUID); }
+    public Optional<UUID> getPilotUUID() { return entityData.get(DATA_PILOT_UUID); }
     public int getSubsystemState() { return entityData.get(DATA_SUBSYSTEM_STATE); }
-    public Quaternionf getShipRotation(){ return entityData.get(DATA_ROTATION); }
+    public Quaternionf getShipRotation() { return entityData.get(DATA_ROTATION); }
 
-    public void setHullIntegrity(float v) { entityData.set(DATA_HULL_INTEGRITY, clamp01(v)); }
+    public void setHullIntegrity(float v) { entityData.set(DATA_HULL_INTEGRITY,  clamp01(v)); }
     public void setShieldStrength(float v) { entityData.set(DATA_SHIELD_STRENGTH, clamp01(v)); }
     public void setFuelLevel(float v) { entityData.set(DATA_FUEL_LEVEL, clamp01(v)); }
     public void setEuStored(long v) { entityData.set(DATA_EU_STORED, Math.max(0, v)); }
-    public void setShipClassId(ResourceLocation id) { entityData.set(DATA_SHIP_CLASS, id.toString()); }
+    public void setShipClassId(ResourceLocation id){ entityData.set(DATA_SHIP_CLASS, id.toString()); }
     public void setPilotUUID(UUID uuid) { entityData.set(DATA_PILOT_UUID, Optional.ofNullable(uuid)); }
     public void setSubsystemState(int mask) { entityData.set(DATA_SUBSYSTEM_STATE, mask); }
-    public void setShipRotation(Quaternionf q){ entityData.set(DATA_ROTATION, new Quaternionf(q).normalize()); }
+
+    public void setShipRotation(Quaternionf q)
+    {
+        entityData.set(DATA_ROTATION, new Quaternionf(q).normalize());
+        if (!level().isClientSide()) refreshBB();
+    }
 
     public void setLastFlightInput(FlightInput input) { this.lastFlightInput = input; }
     public void resetFlightInputAge() { this.flightInputAge  = 0; }
@@ -197,6 +316,7 @@ public class ShipEntity extends Entity
     public void setBlockSnapshot(List<ShipSnapshotPacket.BlockEntry> snapshot)
     {
         this.blockSnapshot = new ArrayList<>(snapshot);
+        refreshBB();
     }
 
     public List<ShipSnapshotPacket.BlockEntry> getBlockSnapshot() { return blockSnapshot; }
@@ -205,8 +325,7 @@ public class ShipEntity extends Entity
     public void startSeenByPlayer(ServerPlayer connection)
     {
         super.startSeenByPlayer(connection);
-        if (!blockSnapshot.isEmpty())
-            PacketDistributor.sendToPlayer(connection, new ShipSnapshotPacket(this.getUUID(), blockSnapshot));
+        if (!blockSnapshot.isEmpty()) PacketDistributor.sendToPlayer(connection, new ShipSnapshotPacket(this.getUUID(), blockSnapshot));
     }
 
     public void applyDamage(float rawDamage, int targetSubsystem)
@@ -221,7 +340,8 @@ public class ShipEntity extends Entity
                 setShieldStrength(shield - absorbed);
             }
             setHullIntegrity(getHullIntegrity() - rawDamage / getDefinition().map(ShipDefinition::maxHull).orElse(200f));
-            if (isDestroyed()) Auralithpioneerinitiative.LOGGER.info("[Auralith] Ship {} destroyed.", getId());
+            if (isDestroyed())
+                Auralithpioneerinitiative.LOGGER.info("[Auralith] Vaisseau {} détruit.", getId());
         }
     }
 
@@ -232,8 +352,8 @@ public class ShipEntity extends Entity
         setShieldStrength(tag.getFloat("shield"));
         setFuelLevel(tag.getFloat("fuel"));
         setEuStored(tag.getLong("eu"));
-        if (tag.contains("shipClass"))    entityData.set(DATA_SHIP_CLASS, tag.getString("shipClass"));
-        if (tag.hasUUID("pilotUUID"))     setPilotUUID(tag.getUUID("pilotUUID"));
+        if (tag.contains("shipClass"))  entityData.set(DATA_SHIP_CLASS, tag.getString("shipClass"));
+        if (tag.hasUUID("pilotUUID"))   setPilotUUID(tag.getUUID("pilotUUID"));
         setSubsystemState(tag.getInt("subsystems"));
 
         if (tag.contains("rotX")) setShipRotation(new Quaternionf(tag.getFloat("rotX"), tag.getFloat("rotY"), tag.getFloat("rotZ"), tag.getFloat("rotW")));
@@ -253,17 +373,19 @@ public class ShipEntity extends Entity
     @Override
     protected void addAdditionalSaveData(CompoundTag tag)
     {
-        tag.putFloat("hull",  getHullIntegrity());
+        tag.putFloat("hull", getHullIntegrity());
         tag.putFloat("shield", getShieldStrength());
-        tag.putFloat("fuel",  getFuelLevel());
-        tag.putLong("eu",    getEuStored());
+        tag.putFloat("fuel", getFuelLevel());
+        tag.putLong("eu", getEuStored());
         tag.putString("shipClass", getShipClassId());
         getPilotUUID().ifPresent(uuid -> tag.putUUID("pilotUUID", uuid));
         tag.putInt("subsystems", getSubsystemState());
 
         Quaternionf rot = getShipRotation();
-        tag.putFloat("rotX", rot.x); tag.putFloat("rotY", rot.y);
-        tag.putFloat("rotZ", rot.z); tag.putFloat("rotW", rot.w);
+        tag.putFloat("rotX", rot.x);
+        tag.putFloat("rotY", rot.y);
+        tag.putFloat("rotZ", rot.z);
+        tag.putFloat("rotW", rot.w);
         physics.save(tag);
 
         if (!blockSnapshot.isEmpty())
