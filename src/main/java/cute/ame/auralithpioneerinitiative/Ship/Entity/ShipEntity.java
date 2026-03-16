@@ -4,14 +4,20 @@ import cute.ame.auralithpioneerinitiative.Auralithpioneerinitiative;
 import cute.ame.auralithpioneerinitiative.Ship.Data.ShipDefinition;
 import cute.ame.auralithpioneerinitiative.Ship.Data.ShipRegistry;
 import cute.ame.auralithpioneerinitiative.Ship.Network.ShipSnapshotPacket;
+import cute.ame.auralithpioneerinitiative.Ship.Network.ShipTransformPacket;
 import cute.ame.auralithpioneerinitiative.Ship.Physics.FlightInput;
 import cute.ame.auralithpioneerinitiative.Ship.Physics.ShipPhysics;
+import cute.ame.auralithpioneerinitiative.Ship.Physics.ShipTransformData;
+import cute.ame.auralithpioneerinitiative.Ship.Physics.ShipTransformRegistry;
+import cute.ame.auralithpioneerinitiative.Ship.Shipyard.ShipyardAllocator;
+import cute.ame.auralithpioneerinitiative.Ship.Shipyard.ShipyardManager;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -32,29 +38,32 @@ import java.util.UUID;
 
 public class ShipEntity extends Entity
 {
-    public static final int SUBSYSTEM_ENGINE = 0x01;
+    public static final int SUBSYSTEM_ENGINE  = 0x01;
     public static final int SUBSYSTEM_REACTOR = 0x02;
     public static final int SUBSYSTEM_SHIELDS = 0x04;
     public static final int SUBSYSTEM_WEAPONS = 0x08;
-    public static final int SUBSYSTEM_CARGO = 0x10;
+    public static final int SUBSYSTEM_CARGO   = 0x10;
 
-    private static final double SEAT_REACH = 6.0;
+    private static final double SEAT_REACH      = 6.0;
     private static final double SEAT_HIT_RADIUS = 1.8;
 
-    private static final EntityDataAccessor<Float> DATA_HULL_INTEGRITY  = SynchedEntityData.defineId(ShipEntity.class, EntityDataSerializers.FLOAT);
-    private static final EntityDataAccessor<Float> DATA_SHIELD_STRENGTH = SynchedEntityData.defineId(ShipEntity.class, EntityDataSerializers.FLOAT);
-    private static final EntityDataAccessor<Float> DATA_FUEL_LEVEL = SynchedEntityData.defineId(ShipEntity.class, EntityDataSerializers.FLOAT);
-    private static final EntityDataAccessor<Long> DATA_EU_STORED = SynchedEntityData.defineId(ShipEntity.class, EntityDataSerializers.LONG);
-    private static final EntityDataAccessor<String> DATA_SHIP_CLASS = SynchedEntityData.defineId(ShipEntity.class, EntityDataSerializers.STRING);
-    private static final EntityDataAccessor<Optional<UUID>> DATA_PILOT_UUID = SynchedEntityData.defineId(ShipEntity.class, EntityDataSerializers.OPTIONAL_UUID);
-    private static final EntityDataAccessor<Integer> DATA_SUBSYSTEM_STATE = SynchedEntityData.defineId(ShipEntity.class, EntityDataSerializers.INT);
-    private static final EntityDataAccessor<Quaternionf> DATA_ROTATION = SynchedEntityData.defineId(ShipEntity.class, ModEntities.QUATERNIONF);
+    private static final EntityDataAccessor<Float>          DATA_HULL_INTEGRITY  = SynchedEntityData.defineId(ShipEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Float>          DATA_SHIELD_STRENGTH = SynchedEntityData.defineId(ShipEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Float>          DATA_FUEL_LEVEL      = SynchedEntityData.defineId(ShipEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Long>           DATA_EU_STORED       = SynchedEntityData.defineId(ShipEntity.class, EntityDataSerializers.LONG);
+    private static final EntityDataAccessor<String>         DATA_SHIP_CLASS      = SynchedEntityData.defineId(ShipEntity.class, EntityDataSerializers.STRING);
+    private static final EntityDataAccessor<Optional<UUID>> DATA_PILOT_UUID      = SynchedEntityData.defineId(ShipEntity.class, EntityDataSerializers.OPTIONAL_UUID);
+    private static final EntityDataAccessor<Integer>        DATA_SUBSYSTEM_STATE = SynchedEntityData.defineId(ShipEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Quaternionf>    DATA_ROTATION        = SynchedEntityData.defineId(ShipEntity.class, ModEntities.QUATERNIONF);
 
     private final ShipPhysics physics = new ShipPhysics();
     private FlightInput lastFlightInput = FlightInput.IDLE;
-    private int flightInputAge  = 0;
+    private int flightInputAge = 0;
 
     private List<ShipSnapshotPacket.BlockEntry> blockSnapshot = new ArrayList<>();
+
+    private static final int STATIC_BROADCAST_INTERVAL = 5;
+    private int staticBroadcastTimer = 0;
 
     public ShipEntity(EntityType<?> type, Level level)
     {
@@ -75,91 +84,53 @@ public class ShipEntity extends Entity
             .map(def ->
             {
                 int[] sz = def.computeSize();
-                float w = Math.max(1f, Math.max(sz[0], sz[2]));
-                float h = Math.max(1f, sz[1]);
+                float w  = Math.max(1f, Math.max(sz[0], sz[2]));
+                float h  = Math.max(1f, sz[1]);
                 return net.minecraft.world.entity.EntityDimensions.scalable(w, h);
             }).orElse(net.minecraft.world.entity.EntityDimensions.scalable(3f, 2f));
     }
 
+    public AABB getLocalBounds()
+    {
+        return ShipPhysics.getLocalBounds(this);
+    }
+
     private AABB computeRotatedAABB()
     {
-        float localMinX, localMinY, localMinZ;
-        float localMaxX, localMaxY, localMaxZ;
-
-        if (!blockSnapshot.isEmpty())
+        AABB local = getLocalBounds();
+        float[][] corners =
         {
-            localMinX = localMinY = localMinZ =  Float.MAX_VALUE;
-            localMaxX = localMaxY = localMaxZ = -Float.MAX_VALUE;
-
-            for (ShipSnapshotPacket.BlockEntry e : blockSnapshot)
-            {
-                if (e.relX() < localMinX) localMinX = e.relX();
-                if (e.relX() + 1 > localMaxX) localMaxX = e.relX() + 1;
-                if (e.relY() < localMinY) localMinY = e.relY();
-                if (e.relY() + 1 > localMaxY) localMaxY = e.relY() + 1;
-                if (e.relZ() < localMinZ) localMinZ = e.relZ();
-                if (e.relZ() + 1 > localMaxZ) localMaxZ = e.relZ() + 1;
-            }
-        }
-        else
-        {
-            Optional<ShipDefinition> defOpt = getDefinition();
-            if (defOpt.isEmpty())
-            {
-                double x = getX(), y = getY(), z = getZ();
-                return new AABB(x - 1.5, y, z - 1.5, x + 1.5, y + 2, z + 1.5);
-            }
-            int[] sz = defOpt.get().computeSize();
-            localMinX = -sz[0] * 0.5f; localMaxX = sz[0] * 0.5f;
-            localMinY = 0; localMaxY = sz[1];
-            localMinZ = -sz[2] * 0.5f; localMaxZ = sz[2] * 0.5f;
-        }
-
-        float[][] corners = {
-            { localMinX, localMinY, localMinZ },
-            { localMaxX, localMinY, localMinZ },
-            { localMinX, localMaxY, localMinZ },
-            { localMaxX, localMaxY, localMinZ },
-            { localMinX, localMinY, localMaxZ },
-            { localMaxX, localMinY, localMaxZ },
-            { localMinX, localMaxY, localMaxZ },
-            { localMaxX, localMaxY, localMaxZ }
+            {(float)local.minX,(float)local.minY,(float)local.minZ},
+            {(float)local.maxX,(float)local.minY,(float)local.minZ},
+            {(float)local.minX,(float)local.maxY,(float)local.minZ},
+            {(float)local.maxX,(float)local.maxY,(float)local.minZ},
+            {(float)local.minX,(float)local.minY,(float)local.maxZ},
+            {(float)local.maxX,(float)local.minY,(float)local.maxZ},
+            {(float)local.minX,(float)local.maxY,(float)local.maxZ},
+            {(float)local.maxX,(float)local.maxY,(float)local.maxZ},
         };
 
-        Quaternionf q    = getShipRotation();
-        float minX =  Float.MAX_VALUE, minY =  Float.MAX_VALUE, minZ =  Float.MAX_VALUE;
-        float maxX = -Float.MAX_VALUE, maxY = -Float.MAX_VALUE, maxZ = -Float.MAX_VALUE;
-
+        Quaternionf q = getShipRotation();
+        float mnX=Float.MAX_VALUE,mnY=Float.MAX_VALUE,mnZ=Float.MAX_VALUE;
+        float mxX=-Float.MAX_VALUE,mxY=-Float.MAX_VALUE,mxZ=-Float.MAX_VALUE;
         for (float[] c : corners)
         {
             Vector3f v = new Vector3f(c[0], c[1], c[2]);
             q.transform(v);
-            if (v.x < minX) minX = v.x;
-            if (v.x > maxX) maxX = v.x;
-            if (v.y < minY) minY = v.y;
-            if (v.y > maxY) maxY = v.y;
-            if (v.z < minZ) minZ = v.z;
-            if (v.z > maxZ) maxZ = v.z;
+            if(v.x<mnX)mnX=v.x; if(v.x>mxX)mxX=v.x;
+            if(v.y<mnY)mnY=v.y; if(v.y>mxY)mxY=v.y;
+            if(v.z<mnZ)mnZ=v.z; if(v.z>mxZ)mxZ=v.z;
         }
-
-        double ox = getX(), oy = getY(), oz = getZ();
-        return new AABB(
-            ox + minX, oy + minY, oz + minZ,
-            ox + maxX, oy + maxY, oz + maxZ
-        );
+        double ox=getX(),oy=getY(),oz=getZ();
+        return new AABB(ox+mnX,oy+mnY,oz+mnZ,ox+mxX,oy+mxY,oz+mxZ);
     }
 
-    private void refreshBB()
-    {
-        setBoundingBox(computeRotatedAABB());
-    }
+    private void refreshBB() { setBoundingBox(computeRotatedAABB()); }
 
     @Override
     public void lerpTo(double x, double y, double z, float yRot, float xRot, int steps)
     {
-        setPos(x, y, z);
-        setRot(yRot, xRot);
-        refreshBB();
+        setPos(x, y, z); setRot(yRot, xRot); refreshBB();
     }
 
     @Override
@@ -167,7 +138,6 @@ public class ShipEntity extends Entity
     {
         super.tick();
         refreshBB();
-
         if (!level().isClientSide()) serverTick();
     }
 
@@ -183,6 +153,67 @@ public class ShipEntity extends Entity
 
         if (hasPilot || physics.isMoving())
             physics.integrate(this, hasPilot ? lastFlightInput : FlightInput.IDLE);
+
+        updateTransformRegistry();
+
+        if (hasPilot || physics.isMoving())
+        {
+            broadcastTransform();
+            staticBroadcastTimer = 0;
+        }
+        else if (++staticBroadcastTimer >= STATIC_BROADCAST_INTERVAL)
+        {
+            broadcastTransform();
+            staticBroadcastTimer = 0;
+        }
+    }
+
+    private void updateTransformRegistry()
+    {
+        ShipTransformRegistry.update(getUUID(), new ShipTransformData(
+            getUUID(), position(), new Quaternionf(getShipRotation()), getLocalBounds()
+        ));
+    }
+
+    private void broadcastTransform()
+    {
+        AABB   local = getLocalBounds();
+        Vec3   vel   = physics.getLinearVelocity();
+        Quaternionf rot = getShipRotation();
+
+        PacketDistributor.sendToPlayersTrackingEntityAndSelf(this, new ShipTransformPacket(
+            getUUID(),
+            getX(), getY(), getZ(),
+            rot.x, rot.y, rot.z, rot.w,
+            (float)vel.x, (float)vel.y, (float)vel.z,
+            (float)local.minX, (float)local.minY, (float)local.minZ,
+            (float)local.maxX, (float)local.maxY, (float)local.maxZ
+        ));
+    }
+
+    @Override
+    public void remove(RemovalReason reason)
+    {
+        super.remove(reason);
+
+        if (!level().isClientSide())
+        {
+            ShipTransformRegistry.remove(getUUID());
+
+            boolean shouldCleanupShipyard = reason == RemovalReason.KILLED || reason == RemovalReason.DISCARDED;
+
+            if (shouldCleanupShipyard && level() instanceof ServerLevel sl)
+            {
+                try
+                {
+                    ShipyardManager.removeFromShipyard(sl.getServer(), getUUID(), blockSnapshot);
+                }
+                catch (Exception e)
+                {
+                    Auralithpioneerinitiative.LOGGER.warn("[Auralith] Nettoyage shipyard échoué pour {}: {}", getUUID(), e.getMessage());
+                }
+            }
+        }
     }
 
     @Override
@@ -204,7 +235,6 @@ public class ShipEntity extends Entity
             Vec3 eye = player.getEyePosition();
             Vec3 lookEnd = eye.add(player.getLookAngle().scale(SEAT_REACH));
             double dist = distRayToPoint(eye, lookEnd, seatWorld);
-
             if (dist > SEAT_HIT_RADIUS && player.distanceTo(this) > SEAT_REACH)
             {
                 sp.sendSystemMessage(Component.literal("[Auralith] Visez le siège du cockpit pour embarquer."));
@@ -226,7 +256,7 @@ public class ShipEntity extends Entity
     public Vec3 getSeatWorldPos(ShipDefinition def)
     {
         Vec3 local = def.findCockpitOffset().toVec3();
-        Vector3f v = new Vector3f((float) local.x, (float) local.y + 0.5f, (float) local.z);
+        Vector3f v = new Vector3f((float)local.x, (float)local.y + 0.5f, (float)local.z);
         getShipRotation().transform(v);
         return new Vec3(getX() + v.x, getY() + v.y, getZ() + v.z);
     }
@@ -234,7 +264,7 @@ public class ShipEntity extends Entity
     private static double distRayToPoint(Vec3 a, Vec3 b, Vec3 p)
     {
         Vec3 ab = b.subtract(a);
-        double t  = Math.max(0.0, Math.min(1.0, p.subtract(a).dot(ab) / Math.max(ab.dot(ab), 1e-9)));
+        double t = Math.max(0.0, Math.min(1.0, p.subtract(a).dot(ab) / Math.max(ab.dot(ab), 1e-9)));
         return p.distanceTo(a.add(ab.scale(t)));
     }
 
@@ -243,10 +273,8 @@ public class ShipEntity extends Entity
     {
         if (!hasPassenger(passenger)) return;
         Vec3 offset = getDefinition().map(def -> def.findCockpitOffset().toVec3()).orElse(new Vec3(0.0, 1.0, 0.0));
-
-        Vector3f rotated = new Vector3f((float) offset.x, (float) offset.y, (float) offset.z);
+        Vector3f rotated = new Vector3f((float)offset.x, (float)offset.y, (float)offset.z);
         getShipRotation().transform(rotated);
-
         moveFunction.accept(passenger, getX() + rotated.x, getY() + rotated.y, getZ() + rotated.z);
     }
 
@@ -304,10 +332,7 @@ public class ShipEntity extends Entity
 
     private static float clamp01(float v) { return Math.max(0f, Math.min(1f, v)); }
 
-    public Optional<ShipDefinition> getDefinition()
-    {
-        return ShipRegistry.get(ResourceLocation.parse(getShipClassId()));
-    }
+    public Optional<ShipDefinition> getDefinition() { return ShipRegistry.get(ResourceLocation.parse(getShipClassId())); }
 
     public boolean isSubsystemOnline(int flag) { return (getSubsystemState() & flag) != 0; }
     public boolean hasPilot() { return getPilotUUID().isPresent(); }
@@ -326,6 +351,7 @@ public class ShipEntity extends Entity
     {
         super.startSeenByPlayer(connection);
         if (!blockSnapshot.isEmpty()) PacketDistributor.sendToPlayer(connection, new ShipSnapshotPacket(this.getUUID(), blockSnapshot));
+        broadcastTransform();
     }
 
     public void applyDamage(float rawDamage, int targetSubsystem)
@@ -339,9 +365,14 @@ public class ShipEntity extends Entity
                 rawDamage -= absorbed;
                 setShieldStrength(shield - absorbed);
             }
-            setHullIntegrity(getHullIntegrity() - rawDamage / getDefinition().map(ShipDefinition::maxHull).orElse(200f));
+            setHullIntegrity(getHullIntegrity()
+                - rawDamage / getDefinition().map(ShipDefinition::maxHull).orElse(200f));
+
             if (isDestroyed())
+            {
                 Auralithpioneerinitiative.LOGGER.info("[Auralith] Vaisseau {} détruit.", getId());
+                kill();
+            }
         }
     }
 
@@ -355,18 +386,17 @@ public class ShipEntity extends Entity
         if (tag.contains("shipClass"))  entityData.set(DATA_SHIP_CLASS, tag.getString("shipClass"));
         if (tag.hasUUID("pilotUUID"))   setPilotUUID(tag.getUUID("pilotUUID"));
         setSubsystemState(tag.getInt("subsystems"));
-
         if (tag.contains("rotX")) setShipRotation(new Quaternionf(tag.getFloat("rotX"), tag.getFloat("rotY"), tag.getFloat("rotZ"), tag.getFloat("rotW")));
         physics.load(tag);
 
         if (tag.contains("snapX"))
         {
-            int[] xs = tag.getIntArray("snapX");
-            int[] ys = tag.getIntArray("snapY");
-            int[] zs = tag.getIntArray("snapZ");
-            int[] ss = tag.getIntArray("snapStates");
+            int[] xs = tag.getIntArray("snapX"), ys = tag.getIntArray("snapY"),
+                  zs = tag.getIntArray("snapZ"), ss = tag.getIntArray("snapStates");
+
             blockSnapshot = new ArrayList<>(xs.length);
-            for (int i = 0; i < xs.length; i++) blockSnapshot.add(new ShipSnapshotPacket.BlockEntry(xs[i], ys[i], zs[i], ss[i]));
+            for (int i = 0; i < xs.length; i++)
+                blockSnapshot.add(new ShipSnapshotPacket.BlockEntry(xs[i], ys[i], zs[i], ss[i]));
         }
     }
 
@@ -376,16 +406,14 @@ public class ShipEntity extends Entity
         tag.putFloat("hull", getHullIntegrity());
         tag.putFloat("shield", getShieldStrength());
         tag.putFloat("fuel", getFuelLevel());
-        tag.putLong("eu", getEuStored());
+        tag.putLong ("eu", getEuStored());
         tag.putString("shipClass", getShipClassId());
         getPilotUUID().ifPresent(uuid -> tag.putUUID("pilotUUID", uuid));
         tag.putInt("subsystems", getSubsystemState());
 
         Quaternionf rot = getShipRotation();
-        tag.putFloat("rotX", rot.x);
-        tag.putFloat("rotY", rot.y);
-        tag.putFloat("rotZ", rot.z);
-        tag.putFloat("rotW", rot.w);
+        tag.putFloat("rotX", rot.x); tag.putFloat("rotY", rot.y);
+        tag.putFloat("rotZ", rot.z); tag.putFloat("rotW", rot.w);
         physics.save(tag);
 
         if (!blockSnapshot.isEmpty())
@@ -394,15 +422,11 @@ public class ShipEntity extends Entity
             int[] xs = new int[n], ys = new int[n], zs = new int[n], ss = new int[n];
             for (int i = 0; i < n; i++)
             {
-                xs[i] = blockSnapshot.get(i).relX();
-                ys[i] = blockSnapshot.get(i).relY();
-                zs[i] = blockSnapshot.get(i).relZ();
-                ss[i] = blockSnapshot.get(i).stateId();
+                xs[i] = blockSnapshot.get(i).relX(); ys[i] = blockSnapshot.get(i).relY();
+                zs[i] = blockSnapshot.get(i).relZ(); ss[i] = blockSnapshot.get(i).stateId();
             }
-            tag.putIntArray("snapX", xs);
-            tag.putIntArray("snapY", ys);
-            tag.putIntArray("snapZ", zs);
-            tag.putIntArray("snapStates", ss);
+            tag.putIntArray("snapX", xs); tag.putIntArray("snapY", ys);
+            tag.putIntArray("snapZ", zs); tag.putIntArray("snapStates", ss);
         }
     }
 }

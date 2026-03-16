@@ -2,6 +2,7 @@ package cute.ame.auralithpioneerinitiative;
 
 import com.mojang.logging.LogUtils;
 import cute.ame.auralithpioneerinitiative.Command.AuralithCommand;
+import cute.ame.auralithpioneerinitiative.Event.ShipPassengerEvent;
 import cute.ame.auralithpioneerinitiative.Registrie.ModBlockEntities;
 import cute.ame.auralithpioneerinitiative.Registrie.ModBlocks;
 import cute.ame.auralithpioneerinitiative.Registrie.ModItems;
@@ -9,6 +10,7 @@ import cute.ame.auralithpioneerinitiative.Ship.Data.ShipDefinitionLoader;
 import cute.ame.auralithpioneerinitiative.Ship.Entity.ModEntities;
 import cute.ame.auralithpioneerinitiative.Ship.Network.FlightInputPacket;
 import cute.ame.auralithpioneerinitiative.Ship.Network.ShipSnapshotPacket;
+import cute.ame.auralithpioneerinitiative.Ship.Network.ShipTransformPacket;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
@@ -37,6 +39,7 @@ public class Auralithpioneerinitiative
     modEventBus.addListener(Auralithpioneerinitiative::onRegisterPayloadHandlers);
     NeoForge.EVENT_BUS.addListener(Auralithpioneerinitiative::onAddReloadListeners);
     NeoForge.EVENT_BUS.addListener(Auralithpioneerinitiative::onRegisterCommands);
+    NeoForge.EVENT_BUS.register(ShipPassengerEvent.class);
   }
 
   private static void onRegisterPayloadHandlers(RegisterPayloadHandlersEvent event)
@@ -44,15 +47,21 @@ public class Auralithpioneerinitiative
     final PayloadRegistrar registrar = event.registrar(MODID);
 
     registrar.playToClient(
-      ShipSnapshotPacket.TYPE,
-      ShipSnapshotPacket.STREAM_CODEC,
-      ShipSnapshotPacket::handle
+        ShipSnapshotPacket.TYPE,
+        ShipSnapshotPacket.STREAM_CODEC,
+        ShipSnapshotPacket::handle
+    );
+
+    registrar.playToClient(
+        ShipTransformPacket.TYPE,
+        ShipTransformPacket.STREAM_CODEC,
+        ShipTransformPacket::handle
     );
 
     registrar.playToServer(
-      FlightInputPacket.TYPE,
-      FlightInputPacket.STREAM_CODEC,
-      FlightInputPacket::handle
+        FlightInputPacket.TYPE,
+        FlightInputPacket.STREAM_CODEC,
+        FlightInputPacket::handle
     );
 
     LOGGER.debug("[Auralith] Registered network payloads");

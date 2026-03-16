@@ -4,7 +4,8 @@
   "package": "cute.ame.auralithpioneerinitiative.Mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "Player.SwimPoseMixin"
+    "Player.SwimPoseMixin",
+    "Player.EntityMoveMixin"
   ],
   "client": [
     "Rendering.SkyMixin",

@@ -17,6 +17,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
 public final class AuralithCommand
@@ -49,8 +50,7 @@ public final class AuralithCommand
         for (ShipDefinition def : all)
         {
             int[] sz = def.computeSize();
-            src.sendSuccess(() -> Component.literal("  • " + def.id() + " (" + def.displayName() + ")  "+ sz[0] + "x" + sz[1] + "x" + sz[2]
-            ), false);
+            src.sendSuccess(() -> Component.literal("  • " + def.id() + " (" + def.displayName() + ")  "+ sz[0] + "x" + sz[1] + "x" + sz[2]), false);
         }
         return all.size();
     }
@@ -99,10 +99,12 @@ public final class AuralithCommand
         if (level.getBlockEntity(pos) instanceof ShipCoreBlockEntity core)
         {
             core.forceAssemble(level, pos, player.getDirection(), def, player);
+            level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
             return 1;
         }
 
         src.sendFailure(Component.literal("[Auralith] Failed to place Ship Core block entity."));
+
         return 0;
     }
 }

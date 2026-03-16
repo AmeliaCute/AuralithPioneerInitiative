@@ -7,6 +7,7 @@ import cute.ame.auralithpioneerinitiative.Ship.Data.ShipRegistry;
 import cute.ame.auralithpioneerinitiative.Ship.Entity.ModEntities;
 import cute.ame.auralithpioneerinitiative.Ship.Entity.ShipEntity;
 import cute.ame.auralithpioneerinitiative.Ship.Network.ShipSnapshotPacket;
+import cute.ame.auralithpioneerinitiative.Ship.Shipyard.ShipyardManager;
 import gg.amecute.auralithutilities.Multiblock.Data.BlockDefinition;
 import gg.amecute.auralithutilities.Multiblock.Data.MultiblockStructure;
 import gg.amecute.auralithutilities.Multiblock.Data.MultiblockValidator;
@@ -33,11 +34,7 @@ public class ShipCoreBlockEntity extends BlockEntity
     private boolean assembled = false;
     private @Nullable ResourceLocation shipDefinitionId = null;
     private @Nullable UUID shipEntityUUID = null;
-
     private boolean snapshotFromWorld = false;
-
-    public static final int SHIPYARD_BASE_X = 30_000_000;
-    public static final int SHIPYARD_SLOT_WIDTH = 2048;
 
     public ShipCoreBlockEntity(BlockPos pos, BlockState state)
     {
@@ -60,7 +57,6 @@ public class ShipCoreBlockEntity extends BlockEntity
                 return;
             }
         }
-
         player.sendSystemMessage(Component.literal("[Auralith] No valid ship structure detected. Check the multiblock layout."));
     }
 
@@ -86,24 +82,38 @@ public class ShipCoreBlockEntity extends BlockEntity
         ship.setEuStored(def.maxEu());
         ship.setBlockSnapshot(snapshot);
         ship.setShipRotation(def.computeInitialRotation());
-        ship.moveTo(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
+        ship.moveTo(pos.getX(), pos.getY(), pos.getZ());
         level.addFreshEntity(ship);
 
         assembled = true;
         shipDefinitionId = def.id();
-        shipEntityUUID   = ship.getUUID();
+        shipEntityUUID = ship.getUUID();
         snapshotFromWorld = fromWorld;
         setChanged();
 
-        if (!snapshot.isEmpty())
+        try
         {
-            ShipSnapshotPacket packet = new ShipSnapshotPacket(ship.getUUID(), snapshot);
-            PacketDistributor.sendToPlayersTrackingEntityAndSelf(ship, packet);
+            ShipyardManager.writeSnapshotToShipyard(level.getServer(), ship.getUUID(), snapshot);
         }
+        catch (Exception e)
+        {
+            Auralithpioneerinitiative.LOGGER.error("[Auralith] Erreur écriture shipyard: {}", e.getMessage());
+        }
+
+        if (!snapshot.isEmpty())
+            PacketDistributor.sendToPlayersTrackingEntityAndSelf(ship, new ShipSnapshotPacket(ship.getUUID(), snapshot));
 
         String msg = "[Auralith] Ship assembled: " + def.displayName() + " (" + snapshot.size() + " blocks, entity " + ship.getUUID() + ")";
         if (player != null) player.sendSystemMessage(Component.literal(msg));
         Auralithpioneerinitiative.LOGGER.info("[Auralith] {} assembled '{}' at {} - {} blocks - entity {}", player != null ? player.getScoreboardName() : "<command>", def.id(), pos, snapshot.size(), ship.getUUID());
+    }
+
+    public void markDisassembled()
+    {
+        assembled = false;
+        shipEntityUUID = null;
+        setChanged();
+        Auralithpioneerinitiative.LOGGER.debug("[Auralith] ShipCoreBlockEntity marqué désassemblé à {}", getBlockPos());
     }
 
     static List<ShipSnapshotPacket.BlockEntry> captureSnapshot(ServerLevel level, BlockPos corePos, ShipDefinition def)
@@ -111,29 +121,18 @@ public class ShipCoreBlockEntity extends BlockEntity
         int[] size = def.computeSize();
         int halfW = size[0] / 2 + 2;
         int height = size[1] + 2;
-        int depth  = size[2] + 2;
+        int depth = size[2] + 2;
 
         List<ShipSnapshotPacket.BlockEntry> result = new ArrayList<>();
-
         for (int dy = -1; dy <= height; dy++)
-        {
             for (int dz = -depth; dz <= depth; dz++)
-            {
                 for (int dx = -halfW; dx <= halfW; dx++)
                 {
                     BlockPos worldPos = corePos.offset(dx, dy, dz);
-                    BlockState state = level.getBlockState(worldPos);
+                    BlockState state  = level.getBlockState(worldPos);
                     if (state.isAir()) continue;
-
-                    result.add(new ShipSnapshotPacket.BlockEntry(
-                        worldPos.getX() - corePos.getX(),
-                        worldPos.getY() - corePos.getY(),
-                        worldPos.getZ() - corePos.getZ(),
-                        Block.getId(state)
-                    ));
+                    result.add(new ShipSnapshotPacket.BlockEntry(dx, dy, dz, Block.getId(state)));
                 }
-            }
-        }
         return result;
     }
 
@@ -149,15 +148,13 @@ public class ShipCoreBlockEntity extends BlockEntity
                 String row = rows.get(lz);
                 for (int lx = 0; lx < row.length(); lx++)
                 {
-                    char c = row.charAt(lx);
-                    BlockDefinition bd = def.palette().get(c);
+                    BlockDefinition bd = def.palette().get(row.charAt(lx));
                     if (bd != null && bd.isController()) { ctrlX = lx; ctrlY = ly; ctrlZ = lz; break outer; }
                 }
             }
         }
 
         List<ShipSnapshotPacket.BlockEntry> result = new ArrayList<>();
-
         for (int ly = 0; ly < def.layers().size(); ly++)
         {
             List<String> rows = def.layers().get(ly);
@@ -170,15 +167,9 @@ public class ShipCoreBlockEntity extends BlockEntity
                     if (c == ' ') continue;
                     BlockDefinition bd = def.palette().get(c);
                     if (bd == null) continue;
-
                     var blockOpt = BuiltInRegistries.BLOCK.getOptional(bd.blockId());
                     if (blockOpt.isEmpty()) continue;
-
-                    BlockState state = blockOpt.get().defaultBlockState();
-                    result.add(new ShipSnapshotPacket.BlockEntry(
-                        lx - ctrlX, ly - ctrlY, lz - ctrlZ,
-                        Block.getId(state)
-                    ));
+                    result.add(new ShipSnapshotPacket.BlockEntry(lx - ctrlX, ly - ctrlY, lz - ctrlZ, Block.getId(blockOpt.get().defaultBlockState())));
                 }
             }
         }
@@ -200,13 +191,6 @@ public class ShipCoreBlockEntity extends BlockEntity
         );
     }
 
-    public void markDisassembled()
-    {
-        assembled = false;
-        shipEntityUUID = null;
-        setChanged();
-    }
-
     public boolean isAssembled() { return assembled; }
     public @Nullable ResourceLocation getShipDefinitionId() { return shipDefinitionId; }
     public @Nullable UUID getShipEntityUUID() { return shipEntityUUID; }
@@ -218,7 +202,7 @@ public class ShipCoreBlockEntity extends BlockEntity
         tag.putBoolean("assembled", assembled);
         tag.putBoolean("snapshotFromWorld", snapshotFromWorld);
         if (shipDefinitionId != null) tag.putString("shipDef", shipDefinitionId.toString());
-        if (shipEntityUUID  != null) tag.putUUID("shipEntity", shipEntityUUID);
+        if (shipEntityUUID != null) tag.putUUID("shipEntity", shipEntityUUID);
     }
 
     @Override
@@ -228,6 +212,6 @@ public class ShipCoreBlockEntity extends BlockEntity
         assembled = tag.getBoolean("assembled");
         snapshotFromWorld = tag.getBoolean("snapshotFromWorld");
         if (tag.contains("shipDef")) shipDefinitionId = ResourceLocation.parse(tag.getString("shipDef"));
-        if (tag.hasUUID("shipEntity"))  shipEntityUUID = tag.getUUID("shipEntity");
+        if (tag.hasUUID("shipEntity")) shipEntityUUID = tag.getUUID("shipEntity");
     }
 }
