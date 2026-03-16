@@ -2,7 +2,6 @@ package cute.ame.auralithpioneerinitiative;
 
 import com.mojang.logging.LogUtils;
 import cute.ame.auralithpioneerinitiative.Command.AuralithCommand;
-import cute.ame.auralithpioneerinitiative.Event.ShipPassengerEvent;
 import cute.ame.auralithpioneerinitiative.Registrie.ModBlockEntities;
 import cute.ame.auralithpioneerinitiative.Registrie.ModBlocks;
 import cute.ame.auralithpioneerinitiative.Registrie.ModItems;

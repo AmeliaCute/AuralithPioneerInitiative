@@ -125,11 +125,21 @@ public abstract class EntityMoveMixin
 
     if (dy != 0)
     {
-      AABB probe = dy < 0 ? new AABB(bb.minX, bb.minY + dy, bb.minZ, bb.maxX, bb.minY, bb.maxZ) : new AABB(bb.minX, bb.maxY, bb.minZ, bb.maxX, bb.maxY + dy, bb.maxZ);
-
-      if (hasBlockIn(view, probe, ctx))
-        dy = binarySearchY(bb.minY, bb.maxY, dy, bb.minX, bb.minZ, bb.maxX, bb.maxZ, view, ctx);
-
+      if (dy < 0)
+      {
+        AABB probe = new AABB(bb.minX, bb.minY + dy, bb.minZ, bb.maxX, bb.minY + 1e-4, bb.maxZ);
+        if (hasBlockIn(view, probe, ctx))
+          dy = binarySearchY(bb.minY, bb.maxY, dy, bb.minX, bb.minZ, bb.maxX, bb.maxZ, view, ctx);
+      }
+      else
+      {
+        if (!hasBlockIn(view, bb, ctx))
+        {
+          AABB probe = new AABB(bb.minX, bb.maxY, bb.minZ, bb.maxX, bb.maxY + dy, bb.maxZ);
+          if (hasBlockIn(view, probe, ctx))
+            dy = 0;
+        }
+      }
       bb = bb.move(0, dy, 0);
     }
 
@@ -157,7 +167,7 @@ public abstract class EntityMoveMixin
     for (int i = 0; i < 8; i++)
     {
       double mid = (lo + hi) * 0.5;
-      AABB probe = goingDown ? new AABB(bx0, bbMinY + mid, bz0, bx1, bbMinY, bz1) : new AABB(bx0, bbMaxY, bz0, bx1, bbMaxY + mid, bz1);
+      AABB probe = goingDown ? new AABB(bx0, bbMinY + mid, bz0, bx1, bbMinY + 1e-4, bz1) : new AABB(bx0, bbMaxY, bz0, bx1, bbMaxY + mid, bz1);
       if (hasBlockIn(view, probe, ctx)) hi = mid;
       else lo = mid;
     }

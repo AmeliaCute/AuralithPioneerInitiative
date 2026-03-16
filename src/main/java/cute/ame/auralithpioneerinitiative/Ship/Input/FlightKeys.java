@@ -6,18 +6,6 @@ import net.neoforged.api.distmarker.OnlyIn;
 import org.lwjgl.glfw.GLFW;
 import com.mojang.blaze3d.platform.InputConstants;
 
-/**
- * Key/button mappings for in-flight cockpit controls.
- *
- * Mouse (default, flight mode — free-look OFF):
- *   Mouse X → yaw   |   Mouse Y → pitch
- *
- * Thrust   : W/S (forward/back)  A/D (strafe)  Space/LCtrl (up/down)
- * Rotation : ↑↓←→ (pitch/yaw)   Q/E (roll)    — usable alongside mouse
- * Boost    : Left Shift
- * Free-look: Middle Mouse Button — hold to unlock camera from ship nose
- * Dismount : R
- */
 @OnlyIn(Dist.CLIENT)
 public final class FlightKeys
 {

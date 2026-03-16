@@ -61,6 +61,7 @@ public class ShipEntity extends Entity
     private int flightInputAge = 0;
 
     private List<ShipSnapshotPacket.BlockEntry> blockSnapshot = new ArrayList<>();
+    private ShipTransformData prevTransformThisTick = null;
 
     private static final int STATIC_BROADCAST_INTERVAL = 5;
     private int staticBroadcastTimer = 0;
@@ -151,10 +152,18 @@ public class ShipEntity extends Entity
             if (flightInputAge > 60) lastFlightInput = FlightInput.IDLE;
         }
 
-        if (hasPilot || physics.isMoving())
-            physics.integrate(this, hasPilot ? lastFlightInput : FlightInput.IDLE);
+        prevTransformThisTick = new ShipTransformData(
+            getUUID(),
+            position(),
+            new Quaternionf(getShipRotation()),
+            getLocalBounds()
+        );
+
+        if (hasPilot || physics.isMoving()) physics.integrate(this, hasPilot ? lastFlightInput : FlightInput.IDLE);
 
         updateTransformRegistry();
+
+        carryInsidePlayers();
 
         if (hasPilot || physics.isMoving())
         {
@@ -166,6 +175,64 @@ public class ShipEntity extends Entity
             broadcastTransform();
             staticBroadcastTimer = 0;
         }
+    }
+
+    private void carryInsidePlayers()
+    {
+        if (!(level() instanceof ServerLevel sl)) return;
+        if (prevTransformThisTick == null) return;
+
+        ShipTransformData before = prevTransformThisTick;
+        ShipTransformData after  = ShipTransformRegistry.get(getUUID()).orElse(null);
+        if (after == null) return;
+
+        boolean posChanged = before.worldPos().distanceToSqr(after.worldPos()) > 1e-10;
+        boolean rotChanged = !before.rotation().equals(after.rotation());
+        if (!posChanged && !rotChanged) return;
+
+        AABB localBounds = getLocalBounds();
+        AABB worldSearchBounds = buildWorldAABB(before, localBounds).inflate(2.0);
+
+        for (ServerPlayer player : sl.getPlayers(p -> !p.isPassenger()))
+        {
+            Vec3 playerPos = player.position();
+            if (!worldSearchBounds.contains(playerPos)) continue;
+
+            Vec3 localPos = before.toShip(playerPos);
+            AABB localCheck = localBounds.inflate(1.0).expandTowards(0, 2.0, 0);
+            if (!localCheck.contains(localPos)) continue;
+
+            Vec3 targetWorld = after.toWorld(localPos);
+            Vec3 delta = targetWorld.subtract(playerPos);
+            if (delta.lengthSqr() < 1e-10) continue;
+
+            player.setPos(targetWorld.x, targetWorld.y, targetWorld.z);
+            player.hurtMarked = true;
+        }
+    }
+
+    private static AABB buildWorldAABB(ShipTransformData transform, AABB local)
+    {
+        double[] xs = { local.minX, local.maxX };
+        double[] ys = { local.minY, local.maxY };
+        double[] zs = { local.minZ, local.maxZ };
+
+        double minX = Double.MAX_VALUE, minY = Double.MAX_VALUE, minZ = Double.MAX_VALUE;
+        double maxX = -Double.MAX_VALUE, maxY = -Double.MAX_VALUE, maxZ = -Double.MAX_VALUE;
+
+        org.joml.Vector3f v = new org.joml.Vector3f();
+        for (double lx : xs) for (double ly : ys) for (double lz : zs)
+        {
+            v.set((float) lx, (float) ly, (float) lz);
+            transform.rotation().transform(v);
+            double wx = transform.worldPos().x + v.x;
+            double wy = transform.worldPos().y + v.y;
+            double wz = transform.worldPos().z + v.z;
+            if (wx < minX) minX = wx; if (wx > maxX) maxX = wx;
+            if (wy < minY) minY = wy; if (wy > maxY) maxY = wy;
+            if (wz < minZ) minZ = wz; if (wz > maxZ) maxZ = wz;
+        }
+        return new AABB(minX, minY, minZ, maxX, maxY, maxZ);
     }
 
     private void updateTransformRegistry()
