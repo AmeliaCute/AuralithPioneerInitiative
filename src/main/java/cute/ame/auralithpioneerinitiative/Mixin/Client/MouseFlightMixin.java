@@ -4,8 +4,6 @@ import cute.ame.auralithpioneerinitiative.Ship.Entity.ShipEntity;
 import cute.ame.auralithpioneerinitiative.Ship.Input.FlightCameraState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.MouseHandler;
-import net.minecraft.util.SmoothDouble;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -24,10 +22,19 @@ public abstract class MouseFlightMixin
     Minecraft mc = Minecraft.getInstance();
     if (mc.player == null) return;
     if (!(mc.player.getVehicle() instanceof ShipEntity)) return;
+
+    if (FlightCameraState.isPanelFocused())
+    {
+      float sens = 0.0005f;
+      FlightCameraState.addCursorDelta((float)(accumulatedDX * sens), (float)(accumulatedDY * sens));
+      accumulatedDX = 0.0;
+      accumulatedDY = 0.0;
+      ci.cancel();
+      return;
+    }
+
     if (FlightCameraState.isFreeLook()) return;
-
     FlightCameraState.addMouseDelta(accumulatedDX * 5f, accumulatedDY * 5f);
-
     accumulatedDX = 0.0;
     accumulatedDY = 0.0;
     ci.cancel();

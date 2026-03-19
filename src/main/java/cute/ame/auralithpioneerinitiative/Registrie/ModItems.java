@@ -14,8 +14,10 @@ public final class ModItems
   public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(Auralithpioneerinitiative.MODID);
 
   public static final DeferredItem<PortableThrusterItem> PORTABLE_THRUSTER = ITEMS.register("portable_thruster", () -> new PortableThrusterItem(new Properties().stacksTo(1)));
-  public static final DeferredItem<SpaceNavigatorItem> SPACE_NAVIGATOR = ITEMS.register("space_navigator",() -> new SpaceNavigatorItem(new Properties().stacksTo(1)));
 
+  public static final DeferredItem<SpaceNavigatorItem> SPACE_NAVIGATOR = ITEMS.register("space_navigator", () -> new SpaceNavigatorItem(new Properties().stacksTo(1)));
 
   public static final DeferredItem<BlockItem> SHIP_CORE = ITEMS.register("ship_core", () -> new BlockItem(ModBlocks.SHIP_CORE.get(), new Properties()));
+
+  public static final DeferredItem<BlockItem> HOLOPANEL = ITEMS.register("holopanel", () -> new BlockItem(ModBlocks.HOLOPANEL.get(), new Properties()));
 }

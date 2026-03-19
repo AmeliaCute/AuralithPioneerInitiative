@@ -1,6 +1,7 @@
 package cute.ame.auralithpioneerinitiative.Registrie;
 
 import cute.ame.auralithpioneerinitiative.Auralithpioneerinitiative;
+import cute.ame.auralithpioneerinitiative.Ship.Multiblock.HoloPanelBlock;
 import cute.ame.auralithpioneerinitiative.Ship.Multiblock.ShipCoreBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
@@ -18,6 +19,16 @@ public final class ModBlocks
 
     public static final DeferredBlock<ShipCoreBlock> SHIP_CORE = BLOCKS.register(
         "ship_core",
-        () -> new ShipCoreBlock(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).requiresCorrectToolForDrops().strength(5.0f, 1200.0f).sound(SoundType.METAL))
+        () -> new ShipCoreBlock(BlockBehaviour.Properties.of()
+            .mapColor(MapColor.METAL).requiresCorrectToolForDrops()
+            .strength(5.0f, 1200.0f).sound(SoundType.METAL))
+    );
+
+    public static final DeferredBlock<HoloPanelBlock> HOLOPANEL = BLOCKS.register(
+        "holopanel",
+        () -> new HoloPanelBlock(BlockBehaviour.Properties.of()
+            .mapColor(MapColor.METAL).requiresCorrectToolForDrops()
+            .strength(3.0f, 1200.0f).sound(SoundType.METAL)
+            .noOcclusion())
     );
 }
