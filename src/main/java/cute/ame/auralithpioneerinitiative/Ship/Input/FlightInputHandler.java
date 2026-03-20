@@ -38,6 +38,18 @@ public final class FlightInputHandler
     }
 
     boolean freeLook = FlightKeys.KEY_FREE_LOOK.isDown();
+    if (freeLook && !FlightCameraState.isFreeLook())
+    {
+      if (mc.player.getVehicle() instanceof ShipEntity ship)
+      {
+        org.joml.Vector3f euler = new org.joml.Vector3f();
+        ship.getShipRotation().getEulerAnglesYXZ(euler);
+        float yaw   = (float) Math.toDegrees(-euler.y) + 180f;
+        float pitch = (float) Math.toDegrees(-euler.x);
+        mc.player.setYRot(yaw);
+        mc.player.setXRot(pitch);
+      }
+    }
     FlightCameraState.setFreeLook(freeLook);
 
     if (FlightCameraState.isPanelFocused())
@@ -57,7 +69,7 @@ public final class FlightInputHandler
       float sens = (float)(mc.options.sensitivity().get() * 0.6 + 0.2);
       sens = sens * sens * sens;
 
-      mouseYaw   = clamp((float)(-rawDX * MOUSE_SENSITIVITY * sens), -MOUSE_MAX, MOUSE_MAX);
+      mouseYaw = clamp((float)(-rawDX * MOUSE_SENSITIVITY * sens), -MOUSE_MAX, MOUSE_MAX);
       mousePitch = clamp((float)(-rawDY * MOUSE_SENSITIVITY * sens), -MOUSE_MAX, MOUSE_MAX);
     }
 

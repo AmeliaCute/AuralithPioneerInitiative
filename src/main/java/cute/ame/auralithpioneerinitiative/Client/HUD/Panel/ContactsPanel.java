@@ -22,7 +22,7 @@ public class ContactsPanel extends AbstractCockpitPanel
 
     public ContactsPanel()
     {
-        super(new Vector3f(0, 0, 0), new Vector3f(-COS45 * 1.2f, 0.1f, -SIN45 * 1.2f), new Vector3f(SIN45, 0, -COS45), 0.5f);
+        super(new Vector3f(0, 0, 0), new Vector3f(-COS45 * 1.7f, 1.2f, -SIN45 * .8f), new Vector3f(SIN45, 0, COS45), 0.5f);
     }
 
     @Override public ResourceLocation getId() { return ID; }

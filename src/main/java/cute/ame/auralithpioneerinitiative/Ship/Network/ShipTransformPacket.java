@@ -80,7 +80,16 @@ public record ShipTransformPacket(
                 {
                     if (e instanceof ShipEntity ship && ship.getUUID().equals(p.shipUUID))
                     {
-                        ship.lerpTo(p.posX, p.posY, p.posZ, ship.getYRot(), ship.getXRot(), 3);
+                        //TODO: Client Prediction
+                        double dx = p.posX - ship.getX();
+                        double dy = p.posY - ship.getY();
+                        double dz = p.posZ - ship.getZ();
+                        double distSq = dx*dx + dy*dy + dz*dz;
+
+                        if (distSq > 0.01) {
+                            boolean isLocalPilot = net.minecraft.client.Minecraft.getInstance().player != null && net.minecraft.client.Minecraft.getInstance().player.getVehicle() == ship;
+                            ship.lerpTo(p.posX, p.posY, p.posZ, ship.getYRot(), ship.getXRot(), isLocalPilot ? 10 : 3);
+                        }
                         break;
                     }
                 }

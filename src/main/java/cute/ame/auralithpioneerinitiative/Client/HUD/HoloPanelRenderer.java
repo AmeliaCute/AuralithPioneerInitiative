@@ -25,8 +25,7 @@ import org.lwjgl.opengl.GL11;
 import java.util.*;
 
 @OnlyIn(Dist.CLIENT)
-public final class HoloPanelRenderer
-{
+public final class HoloPanelRenderer {
 
     private static final HoloPanelRenderer INSTANCE = new HoloPanelRenderer();
     public static HoloPanelRenderer getInstance() { return INSTANCE; }
@@ -50,10 +49,7 @@ public final class HoloPanelRenderer
 
         ScrollPanel.fboHeight = 200;
 
-        for (HoloPanelType panel : HoloPanelRegistry.getInstance().all())
-        {
-            renderSinglePanel(panel, ship, level, camera, partialTick, frustumMatrix, projectionMatrix);
-        }
+        for (HoloPanelType panel : HoloPanelRegistry.getInstance().all()) renderSinglePanel(panel, ship, level, camera, partialTick, frustumMatrix, projectionMatrix);
     }
 
     private void renderSinglePanel(HoloPanelType panel, ShipEntity ship, ClientLevel level, Camera camera, float partialTick, Matrix4f frustumMatrix, Matrix4f projectionMatrix)
@@ -66,6 +62,13 @@ public final class HoloPanelRenderer
         if (alpha <= 0.001f) return;
 
         Vector3f normal = resolveNormal(panel, ship);
+        Vector3f shipUp = new Vector3f(0, 1, 0);
+        Vector3f shipRight = new Vector3f(1, 0, 0);
+        if (ship != null)
+        {
+            ship.getShipRotation().transform(shipUp);
+            ship.getShipRotation().transform(shipRight);
+        }
 
         RenderTarget fbo = HoloPanelRegistry.getInstance().getOrCreateFBO(panel);
         ScrollPanel.fboHeight = panel.getHeight();
@@ -76,25 +79,46 @@ public final class HoloPanelRenderer
         fbo.bindWrite(true);
         RenderSystem.clearColor(0f, 0f, 0f, 0f);
         RenderSystem.clear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT, Minecraft.ON_OSX);
+        RenderSystem.viewport(0, 0, panel.getWidth(), panel.getHeight());
 
-        GuiGraphics g = new GuiGraphics(Minecraft.getInstance(), Minecraft.getInstance().renderBuffers().bufferSource());
+        Matrix4f ortho = new Matrix4f().ortho(0, panel.getWidth(), panel.getHeight(), 0, -1000, 1000);
+        RenderSystem.setProjectionMatrix(ortho, VertexSorting.ORTHOGRAPHIC_Z);
 
-        drawPanelFrame(g, panel.getWidth(), panel.getHeight(), panel.getId().getPath());
-        panel.renderContent(g, ctx, partialTick);
-        g.flush();
+        var mvStack = RenderSystem.getModelViewStack();
+        mvStack.pushMatrix();
+        mvStack.identity();
+        RenderSystem.applyModelViewMatrix();
 
-        fbo.unbindWrite();
-        Minecraft.getInstance().getMainRenderTarget().bindWrite(true);
+        try
+        {
+            GuiGraphics g = new GuiGraphics(Minecraft.getInstance(), Minecraft.getInstance().renderBuffers().bufferSource());
+            drawPanelFrame(g, panel.getWidth(), panel.getHeight(), panel.getId().getPath());
+            panel.renderContent(g, ctx, partialTick);
+            g.flush();
+            Minecraft.getInstance().renderBuffers().bufferSource().endBatch();
+        }
+        finally
+        {
+            mvStack.popMatrix();
+            RenderSystem.applyModelViewMatrix();
+            fbo.unbindWrite();
+            Minecraft.getInstance().getMainRenderTarget().bindWrite(false);
+            RenderSystem.viewport(0, 0,
+                Minecraft.getInstance().getWindow().getWidth(),
+                Minecraft.getInstance().getWindow().getHeight());
 
-        drawWorldQuad(worldPos, normal, panel.worldWidth(), panel.worldHeight(), alpha, fbo, frustumMatrix, projectionMatrix, camera, panel.getAnchor());
+            RenderSystem.setProjectionMatrix(projectionMatrix, VertexSorting.DISTANCE_TO_ORIGIN);
+        }
+
+        drawWorldQuad(worldPos, normal, shipUp, shipRight, panel.worldWidth(), panel.worldHeight(), alpha, fbo, frustumMatrix, projectionMatrix, camera, panel.getAnchor());
     }
 
-    private void drawPanelFrame(GuiGraphics g, int pw, int ph, String panelName)
-    {
+   private void drawPanelFrame(GuiGraphics g, int pw, int ph, String panelName)
+   {
         g.fill(0, 0, pw, ph, HoloPanelColors.opaque(HoloPanelColors.PANEL_BG));
-        g.fill(0, 0, pw, 1, HoloPanelColors.opaque(HoloPanelColors.AMBER_BORDER)); // top
+        g.fill(0, 0, pw, 1, HoloPanelColors.opaque(HoloPanelColors.AMBER_BORDER));// top
         g.fill(0, ph - 1, pw, ph, HoloPanelColors.opaque(HoloPanelColors.AMBER_BORDER)); // bottom
-        g.fill(0, 0, 1, ph, HoloPanelColors.opaque(HoloPanelColors.AMBER_BORDER)); // left
+        g.fill(0, 0, 1, ph, HoloPanelColors.opaque(HoloPanelColors.AMBER_BORDER));// left
         g.fill(pw - 1, 0, pw, ph, HoloPanelColors.opaque(HoloPanelColors.AMBER_BORDER)); // right
         g.drawString(Minecraft.getInstance().font, panelName, 3, 3, HoloPanelColors.opaque(HoloPanelColors.AMBER_DIM), false);
     }
@@ -114,10 +138,15 @@ public final class HoloPanelRenderer
         if (ship == null) return null;
         if (!(panel instanceof CockpitRelativePanel crp)) return null;
 
-        Vector3f offset = crp.getCockpitOffset();
-        Vector3f local = new Vector3f(offset).add(crp.getPanelOffset());
-        ship.getShipRotation().transform(local);
-        return new Vector3f((float) ship.getX() + local.x, (float) ship.getY() + local.y, (float) ship.getZ() + local.z);
+        var seatVec = ship.getDefinition()
+            .map(def -> def.findCockpitOffset().toVec3())
+            .orElse(net.minecraft.world.phys.Vec3.ZERO);
+
+        Vector3f panelOffset = crp.getPanelOffset();
+        Vector3f localCombined = new Vector3f((float) seatVec.x + panelOffset.x, (float) seatVec.y + panelOffset.y, (float) seatVec.z + panelOffset.z);
+        ship.getShipRotation().transform(localCombined);
+
+        return new Vector3f((float) ship.getX() + localCombined.x, (float) ship.getY() + localCombined.y, (float) ship.getZ() + localCombined.z);
     }
 
     private Vector3f resolveBlockPos(HoloPanelType panel)
@@ -138,8 +167,7 @@ public final class HoloPanelRenderer
         );
     }
 
-    private float resolveAlpha(HoloPanelType panel, ShipEntity ship, Camera camera, Vector3f worldPos)
-    {
+    private float resolveAlpha(HoloPanelType panel, ShipEntity ship, Camera camera, Vector3f worldPos) {
         return switch (panel.getAnchor())
         {
             case COCKPIT_RELATIVE -> resolveCockpitAlpha(panel, ship, camera);
@@ -155,7 +183,7 @@ public final class HoloPanelRenderer
 
         Vector3f panelNormal = resolveNormal(panel, ship);
         var camFwd = camera.getLookVector();
-        float dot = camFwd.x * panelNormal.x + camFwd.y * panelNormal.y + camFwd.z * panelNormal.z;
+        float dot = -(camFwd.x * panelNormal.x + camFwd.y * panelNormal.y + camFwd.z * panelNormal.z);
         return smoothstep(panel.getFovGate(), panel.getFovGate() + FOV_GATE_SMOOTH, dot);
     }
 
@@ -182,11 +210,10 @@ public final class HoloPanelRenderer
         return new Vector3f(0, 0, -1);
     }
 
-    private void drawWorldQuad(Vector3f worldPos, Vector3f normal, float quadW, float quadH, float alpha, RenderTarget fbo, Matrix4f frustumMatrix, Matrix4f projectionMatrix, Camera camera, PanelAnchor anchor)
+    private void drawWorldQuad(Vector3f worldPos, Vector3f normal, Vector3f shipUp, Vector3f shipRight, float quadW, float quadH, float alpha, RenderTarget fbo, Matrix4f frustumMatrix, Matrix4f projectionMatrix, Camera camera, PanelAnchor anchor)
     {
-        Vector3f up = Math.abs(normal.y) < 0.99f ? new Vector3f(0, 1, 0) : new Vector3f(1, 0, 0);
+        Vector3f up = new Vector3f(shipUp).sub(new Vector3f(normal).mul(normal.dot(shipUp))).normalize();
         Vector3f right = new Vector3f(normal).cross(up).normalize();
-        Vector3f realUp = new Vector3f(right).cross(normal).normalize();
 
         float hw = quadW * 0.5f;
         float hh = quadH * 0.5f;
@@ -196,50 +223,61 @@ public final class HoloPanelRenderer
         float oy = worldPos.y - (float) camPos.y;
         float oz = worldPos.z - (float) camPos.z;
 
-        float[] bl = { ox - right.x * hw - realUp.x * hh, oy - right.y * hw - realUp.y * hh, oz - right.z * hw - realUp.z * hh };
-        float[] br = { ox + right.x * hw - realUp.x * hh, oy + right.y * hw - realUp.y * hh, oz + right.z * hw - realUp.z * hh };
-        float[] tr = { ox + right.x * hw + realUp.x * hh, oy + right.y * hw + realUp.y * hh, oz + right.z * hw + realUp.z * hh };
-        float[] tl = { ox - right.x * hw + realUp.x * hh, oy - right.y * hw + realUp.y * hh, oz - right.z * hw + realUp.z * hh };
+        float[] bl = { ox - right.x*hw - up.x*hh, oy - right.y*hw - up.y*hh, oz - right.z*hw - up.z*hh };
+        float[] br = { ox + right.x*hw - up.x*hh, oy + right.y*hw - up.y*hh, oz + right.z*hw - up.z*hh };
+        float[] tr = { ox + right.x*hw + up.x*hh, oy + right.y*hw + up.y*hh, oz + right.z*hw + up.z*hh };
+        float[] tl = { ox - right.x*hw + up.x*hh, oy - right.y*hw + up.y*hh, oz - right.z*hw + up.z*hh };
 
-        RenderSystem.enableDepthTest();
-        RenderSystem.depthMask(false);
-        RenderSystem.enableBlend();
-        RenderSystem.blendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ONE, GL11.GL_ZERO);
-        RenderSystem.disableCull();
-
-        if (anchor == PanelAnchor.COCKPIT_RELATIVE)
+        var mvStack = RenderSystem.getModelViewStack();
+        mvStack.pushMatrix();
+        mvStack.identity();
+        RenderSystem.applyModelViewMatrix();
+        try
         {
-            GL11.glEnable(GL11.GL_POLYGON_OFFSET_FILL);
-            GL11.glPolygonOffset(-1f, -1f);
+            RenderSystem.enableDepthTest();
+            RenderSystem.depthMask(false);
+            RenderSystem.enableBlend();
+            RenderSystem.blendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ONE_MINUS_SRC_ALPHA);
+            RenderSystem.disableCull();
+
+            if (anchor == PanelAnchor.COCKPIT_RELATIVE)
+            {
+                GL11.glEnable(GL11.GL_POLYGON_OFFSET_FILL);
+                GL11.glPolygonOffset(-1f, -1f);
+            }
+
+            RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
+            RenderSystem.setShaderTexture(0, fbo.getColorTextureId());
+            RenderSystem.setShaderColor(1f, 1f, 1f, alpha);
+
+            Tesselator    tess = Tesselator.getInstance();
+            BufferBuilder buf  = tess.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+
+            int a = (int)(alpha * 255);
+            buf.addVertex(frustumMatrix, bl[0], bl[1], bl[2]).setUv(1, 0).setColor(255, 255, 255, a);
+            buf.addVertex(frustumMatrix, br[0], br[1], br[2]).setUv(0, 0).setColor(255, 255, 255, a);
+            buf.addVertex(frustumMatrix, tr[0], tr[1], tr[2]).setUv(0, 1).setColor(255, 255, 255, a);
+            buf.addVertex(frustumMatrix, tl[0], tl[1], tl[2]).setUv(1, 1).setColor(255, 255, 255, a);
+
+            BufferUploader.drawWithShader(buf.buildOrThrow());
+            if (anchor == PanelAnchor.COCKPIT_RELATIVE)
+            {
+                GL11.glPolygonOffset(0f, 0f);
+                GL11.glDisable(GL11.GL_POLYGON_OFFSET_FILL);
+            }
+
+            RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+            RenderSystem.defaultBlendFunc();
+            RenderSystem.disableBlend();
+            RenderSystem.depthMask(true);
+            RenderSystem.enableCull();
+
         }
-
-        RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
-        RenderSystem.setShaderTexture(0, fbo.getColorTextureId());
-        RenderSystem.setShaderColor(1f, 1f, 1f, alpha);
-
-        Matrix4f mvp = new Matrix4f(projectionMatrix).mul(frustumMatrix);
-
-        Tesselator tess = Tesselator.getInstance();
-        BufferBuilder buf = tess.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
-
-        int a = (int)(alpha * 255);
-        buf.addVertex(mvp, bl[0], bl[1], bl[2]).setUv(0, 1).setColor(255, 255, 255, a);
-        buf.addVertex(mvp, br[0], br[1], br[2]).setUv(1, 1).setColor(255, 255, 255, a);
-        buf.addVertex(mvp, tr[0], tr[1], tr[2]).setUv(1, 0).setColor(255, 255, 255, a);
-        buf.addVertex(mvp, tl[0], tl[1], tl[2]).setUv(0, 0).setColor(255, 255, 255, a);
-
-        BufferUploader.drawWithShader(buf.buildOrThrow());
-        if (anchor == PanelAnchor.COCKPIT_RELATIVE)
+        finally
         {
-            GL11.glPolygonOffset(0f, 0f);
-            GL11.glDisable(GL11.GL_POLYGON_OFFSET_FILL);
+            mvStack.popMatrix();
+            RenderSystem.applyModelViewMatrix();
         }
-
-        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.disableBlend();
-        RenderSystem.depthMask(true);
-        RenderSystem.enableCull();
     }
 
     public void forwardScroll(double delta)

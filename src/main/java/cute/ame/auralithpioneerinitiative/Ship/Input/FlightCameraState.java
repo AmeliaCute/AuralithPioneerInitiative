@@ -2,12 +2,17 @@ package cute.ame.auralithpioneerinitiative.Ship.Input;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+import org.joml.Quaternionf;
 
 @OnlyIn(Dist.CLIENT)
 public final class FlightCameraState
 {
   private FlightCameraState() {}
   private static boolean freeLook = false;
+
+  private static Quaternionf shipRotation = new org.joml.Quaternionf();
+  public static Quaternionf getShipRotation() { return shipRotation; }
+  public static void setShipRotation(org.joml.Quaternionf q) { shipRotation = q; }
 
   public static boolean isFreeLook() { return freeLook; }
   public static void toggleFreeLook() { freeLook = !freeLook; }
