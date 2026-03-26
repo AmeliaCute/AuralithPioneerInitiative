@@ -4,6 +4,7 @@ import cute.ame.auralithpioneerinitiative.Auralithpioneerinitiative;
 import cute.ame.auralithpioneerinitiative.Client.Dimension.SpaceDimensionEffect;
 import cute.ame.auralithpioneerinitiative.Data.PlanetTextureGenerator;
 import cute.ame.auralithpioneerinitiative.Loader.SolarSystemLoader;
+import cute.ame.auralithpioneerinitiative.Ship.Client.ShipClientPhysics;
 import cute.ame.auralithpioneerinitiative.Ship.Entity.ModEntities;
 import cute.ame.auralithpioneerinitiative.Ship.Input.FlightKeys;
 import cute.ame.auralithpioneerinitiative.Ship.Renderer.ShipClientCache;
@@ -48,13 +49,16 @@ public final class AuralithClient
     @SubscribeEvent
     public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event)
     {
-        for (var key : FlightKeys.ALL)
-            event.register(key);
+        for (var key : FlightKeys.ALL) event.register(key);
     }
 
     @SubscribeEvent
     public static void onLevelUnload(LevelEvent.Unload event)
     {
-        if (event.getLevel().isClientSide()) ShipClientCache.evictAll();
+        if (event.getLevel().isClientSide())
+        {
+            ShipClientCache.evictAll();
+            ShipClientPhysics.clear();
+        }
     }
 }

@@ -3,6 +3,7 @@ package cute.ame.auralithpioneerinitiative.Ship.Renderer;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexBuffer;
+import cute.ame.auralithpioneerinitiative.Ship.Client.ShipClientPhysics;
 import cute.ame.auralithpioneerinitiative.Ship.Entity.ShipEntity;
 import cute.ame.auralithpioneerinitiative.Utils.ShaderHelper;
 import net.minecraft.client.renderer.GameRenderer;
@@ -16,20 +17,15 @@ import net.minecraft.world.phys.AABB;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.joml.Matrix4f;
+import org.joml.Quaternionf;
 
 @OnlyIn(Dist.CLIENT)
 public class ShipEntityRenderer extends EntityRenderer<ShipEntity>
 {
-    public ShipEntityRenderer(EntityRendererProvider.Context context)
-    {
-        super(context);
-    }
+    public ShipEntityRenderer(EntityRendererProvider.Context context) { super(context); }
 
     @Override
-    public ResourceLocation getTextureLocation(ShipEntity entity)
-    {
-        return TextureAtlas.LOCATION_BLOCKS;
-    }
+    public ResourceLocation getTextureLocation(ShipEntity entity) { return TextureAtlas.LOCATION_BLOCKS; }
 
     @Override
     public boolean shouldRender(ShipEntity entity, Frustum frustum, double camX, double camY, double camZ)
@@ -39,7 +35,9 @@ public class ShipEntityRenderer extends EntityRenderer<ShipEntity>
         BakedShipMesh mesh = ShipClientCache.getMesh(entity.getUUID());
         if (mesh == null || !mesh.isReady()) return false;
 
-        AABB worldBounds = mesh.getLocalBounds().move(entity.position());
+        ShipClientPhysics.State cs = ShipClientPhysics.get(entity.getUUID());
+        AABB worldBounds = (cs != null) ? mesh.getLocalBounds().move(cs.pos()) : mesh.getLocalBounds().move(entity.position());
+
         return frustum.isVisible(worldBounds);
     }
 
@@ -53,10 +51,14 @@ public class ShipEntityRenderer extends EntityRenderer<ShipEntity>
         boolean shadersActive = ShaderHelper.shadersActive();
         VertexBuffer vbo = mesh.getBuffer(lod, shadersActive);
         if (vbo == null) return;
+
         if (bufferSource instanceof MultiBufferSource.BufferSource bs) bs.endBatch();
 
+        ShipClientPhysics.State cs = ShipClientPhysics.get(entity.getUUID());
+        Quaternionf rotation = (cs != null) ? cs.rot() : entity.getShipRotation();
+
         poseStack.pushPose();
-        poseStack.mulPose(entity.getShipRotation());
+        poseStack.mulPose(rotation);
 
         Matrix4f modelView = new Matrix4f(RenderSystem.getModelViewMatrix()).mul(poseStack.last().pose());
         Matrix4f projection = RenderSystem.getProjectionMatrix();
