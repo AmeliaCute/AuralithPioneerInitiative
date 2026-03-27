@@ -1,4 +1,46 @@
 {
   "item.auralithpioneerinitiative.portable_thruster": "Portable Thruster",
-  "item.auralithpioneerinitiative.space_navigator": "Space Navigator"
+  "item.auralithpioneerinitiative.space_navigator": "Space Navigator",
+
+  "block.auralithpioneerinitiative.ship_core": "Ship Core",
+  "block.auralithpioneerinitiative.holopanel": "Holo Panel",
+
+  "item.auralithpioneerinitiative.arid_crystal_shard": "Arid Crystal Shard",
+
+  "block.auralithpioneerinitiative.arid_dust": "Arid Dust",
+  "block.auralithpioneerinitiative.arid_rock": "Arid Rock",
+  "block.auralithpioneerinitiative.arid_rock_cracked": "Cracked Arid Rock",
+  "block.auralithpioneerinitiative.arid_rock_polished": "Polished Arid Rock",
+
+  "block.auralithpioneerinitiative.arid_strata_red": "Red Arid Strata",
+  "block.auralithpioneerinitiative.arid_strata_orange": "Orange Arid Strata",
+  "block.auralithpioneerinitiative.arid_strata_white": "White Arid Strata",
+  "block.auralithpioneerinitiative.arid_strata_maroon": "Maroon Arid Strata",
+
+  "block.auralithpioneerinitiative.arid_crystal_small": "Arid Crystal (Small)",
+  "block.auralithpioneerinitiative.arid_crystal_medium": "Arid Crystal (Medium)",
+  "block.auralithpioneerinitiative.arid_crystal_large": "Arid Crystal (Large)",
+
+  "block.auralithpioneerinitiative.arid_glyph": "Alien Glyph",
+  "block.auralithpioneerinitiative.arid_charge_station": "Charge Station",
+
+  "block.auralithpioneerinitiative.alien_panel": "Alien Panel",
+  "block.auralithpioneerinitiative.alien_conduit": "Alien Conduit",
+
+  "key.categories.auralith.flight": "Auralith — Flight",
+  "key.auralith.flight.thrust_forward": "Thrust Forward",
+  "key.auralith.flight.thrust_back": "Thrust Back",
+  "key.auralith.flight.thrust_left": "Thrust Left",
+  "key.auralith.flight.thrust_right": "Thrust Right",
+  "key.auralith.flight.thrust_up": "Thrust Up",
+  "key.auralith.flight.thrust_down": "Thrust Down",
+  "key.auralith.flight.pitch_up": "Pitch Up",
+  "key.auralith.flight.pitch_down": "Pitch Down",
+  "key.auralith.flight.yaw_left": "Yaw Left",
+  "key.auralith.flight.yaw_right": "Yaw Right",
+  "key.auralith.flight.roll_left": "Roll Left",
+  "key.auralith.flight.roll_right": "Roll Right",
+  "key.auralith.flight.boost": "Boost",
+  "key.auralith.flight.dismount": "Dismount",
+  "key.auralith.flight.free_look": "Free Look"
 }
