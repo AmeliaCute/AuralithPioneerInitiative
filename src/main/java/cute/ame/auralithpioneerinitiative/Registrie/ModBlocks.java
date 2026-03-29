@@ -1,12 +1,11 @@
 package cute.ame.auralithpioneerinitiative.Registrie;
 
 import cute.ame.auralithpioneerinitiative.Auralithpioneerinitiative;
-import cute.ame.auralithpioneerinitiative.Block.Alien.AlienConduit;
-import cute.ame.auralithpioneerinitiative.Block.Alien.AlienPanel;
-import cute.ame.auralithpioneerinitiative.Block.Arid.*;
+import cute.ame.auralithpioneerinitiative.Block.AlienConduit;
+import cute.ame.auralithpioneerinitiative.Block.AlienPanel;
+import cute.ame.auralithpioneerinitiative.Planet.Arid.Block.*;
 import cute.ame.auralithpioneerinitiative.Ship.Multiblock.HoloPanelBlock;
 import cute.ame.auralithpioneerinitiative.Ship.Multiblock.ShipCoreBlock;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;

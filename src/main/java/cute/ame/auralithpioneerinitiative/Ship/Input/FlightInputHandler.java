@@ -1,7 +1,7 @@
 package cute.ame.auralithpioneerinitiative.Ship.Input;
 
 import cute.ame.auralithpioneerinitiative.Auralithpioneerinitiative;
-import cute.ame.auralithpioneerinitiative.Client.HUD.HoloPanelRenderer;
+import cute.ame.auralithpioneerinitiative.HoloPanel.HoloPanelRenderer;
 import cute.ame.auralithpioneerinitiative.Ship.Entity.ShipEntity;
 import cute.ame.auralithpioneerinitiative.Ship.Network.FlightInputPacket;
 import net.minecraft.client.Minecraft;
@@ -17,7 +17,7 @@ public final class FlightInputHandler
   private FlightInputHandler() {}
 
   private static final float MOUSE_SENSITIVITY = 0.0025f;
-  private static final float MOUSE_MAX         = 1.0f;
+  private static final float MOUSE_MAX = 1.0f;
 
   @SubscribeEvent
   public static void onClientTick(ClientTickEvent.Post event)
@@ -59,7 +59,7 @@ public final class FlightInputHandler
     }
 
     float mousePitch = 0f;
-    float mouseYaw   = 0f;
+    float mouseYaw = 0f;
 
     if (!freeLook)
     {

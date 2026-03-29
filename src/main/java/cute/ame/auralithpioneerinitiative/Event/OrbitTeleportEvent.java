@@ -2,8 +2,8 @@ package cute.ame.auralithpioneerinitiative.Event;
 
 import cute.ame.auralithpioneerinitiative.API.AuralithAPI;
 import cute.ame.auralithpioneerinitiative.Auralithpioneerinitiative;
-import cute.ame.auralithpioneerinitiative.Data.PlanetDefinition;
-import cute.ame.auralithpioneerinitiative.Data.SolarSystemDefinition;
+import cute.ame.auralithpioneerinitiative.SkyPlanet.Data.PlanetDefinition;
+import cute.ame.auralithpioneerinitiative.SkyPlanet.Data.SolarSystemDefinition;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;

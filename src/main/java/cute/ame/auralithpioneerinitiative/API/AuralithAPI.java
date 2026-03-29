@@ -1,7 +1,7 @@
 package cute.ame.auralithpioneerinitiative.API;
 
-import cute.ame.auralithpioneerinitiative.Data.PlanetDefinition;
-import cute.ame.auralithpioneerinitiative.Data.SolarSystemDefinition;
+import cute.ame.auralithpioneerinitiative.SkyPlanet.Data.PlanetDefinition;
+import cute.ame.auralithpioneerinitiative.SkyPlanet.Data.SolarSystemDefinition;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;

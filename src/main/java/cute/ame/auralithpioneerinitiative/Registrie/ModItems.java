@@ -1,7 +1,7 @@
 package cute.ame.auralithpioneerinitiative.Registrie;
 
 import cute.ame.auralithpioneerinitiative.Auralithpioneerinitiative;
-import cute.ame.auralithpioneerinitiative.Item.AridCrystalShard;
+import cute.ame.auralithpioneerinitiative.Planet.Arid.Item.AridCrystalShard;
 import cute.ame.auralithpioneerinitiative.Item.PortableThrusterItem;
 import cute.ame.auralithpioneerinitiative.Item.SpaceNavigatorItem;
 import net.minecraft.world.item.BlockItem;

@@ -4,7 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexBuffer;
 import cute.ame.auralithpioneerinitiative.Ship.Entity.ShipEntity;
-import cute.ame.auralithpioneerinitiative.Utils.ShaderHelper;
+import cute.ame.auralithpioneerinitiative.SkyPlanet.RenderingHelper.ShaderHelper;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.culling.Frustum;

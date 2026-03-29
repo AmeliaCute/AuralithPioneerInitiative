@@ -1,7 +1,7 @@
 package cute.ame.auralithpioneerinitiative.Ship.Network;
 
 import cute.ame.auralithpioneerinitiative.Auralithpioneerinitiative;
-import cute.ame.auralithpioneerinitiative.Client.HUD.HoloPanelClientState;
+import cute.ame.auralithpioneerinitiative.HoloPanel.HoloPanelClientState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;

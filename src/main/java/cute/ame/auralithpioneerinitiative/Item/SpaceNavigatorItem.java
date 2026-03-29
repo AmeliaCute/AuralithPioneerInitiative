@@ -5,8 +5,8 @@ import java.util.Optional;
 import java.util.Set;
 
 import cute.ame.auralithpioneerinitiative.API.AuralithAPI;
-import cute.ame.auralithpioneerinitiative.Data.PlanetDefinition;
-import cute.ame.auralithpioneerinitiative.Data.SolarSystemDefinition;
+import cute.ame.auralithpioneerinitiative.SkyPlanet.Data.PlanetDefinition;
+import cute.ame.auralithpioneerinitiative.SkyPlanet.Data.SolarSystemDefinition;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;

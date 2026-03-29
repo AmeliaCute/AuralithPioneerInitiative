@@ -1,8 +1,8 @@
 package cute.ame.auralithpioneerinitiative.Mixin.Rendering;
 
 import cute.ame.auralithpioneerinitiative.API.AuralithAPI;
-import cute.ame.auralithpioneerinitiative.Client.Dimension.SpaceDimensionEffect;
-import cute.ame.auralithpioneerinitiative.Client.Sky.SolarSystemRenderer;
+import cute.ame.auralithpioneerinitiative.SkyPlanet.Dimension.SpaceDimensionEffect;
+import cute.ame.auralithpioneerinitiative.SkyPlanet.Rendering.SolarSystemRenderer;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
