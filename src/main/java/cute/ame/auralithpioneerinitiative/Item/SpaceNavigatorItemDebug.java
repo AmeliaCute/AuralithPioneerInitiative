@@ -22,13 +22,13 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
-public class SpaceNavigatorItem extends Item
+public class SpaceNavigatorItemDebug extends Item
 {
   private static final double MIN_DOT = 0.90;
   private static final double ORBIT_SPAWN_Y = 256.0;
   private static final int WARP_COOLDOWN = 100;
 
-  public SpaceNavigatorItem(Properties arg0) { super(arg0); }
+  public SpaceNavigatorItemDebug(Properties arg0) { super(arg0); }
 
   @Override
   public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand usedHand)

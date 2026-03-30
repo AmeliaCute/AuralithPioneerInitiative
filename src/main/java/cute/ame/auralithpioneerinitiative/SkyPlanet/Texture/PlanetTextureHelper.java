@@ -13,9 +13,9 @@ import org.slf4j.Logger;
 import java.util.HashMap;
 import java.util.Map;
 
-public final class PlanetTextureGenerator
+public final class PlanetTextureHelper
 {
-    private PlanetTextureGenerator() {}
+    private PlanetTextureHelper() {}
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Map<String, ResourceLocation> CACHE = new HashMap<>();
 
@@ -52,12 +52,12 @@ public final class PlanetTextureGenerator
     {
       return switch (cfg.type())
       {
-        case ROCKY     -> generateRocky(cfg, res);
+        case ROCKY -> generateRocky(cfg, res);
         case GAS_GIANT -> generateGasGiant(cfg, res);
-        case OCEAN     -> generateOcean(cfg, res);
-        case ICE       -> generateIce(cfg, res);
-        case LAVA      -> generateLava(cfg, res);
-        case TELLURIC  -> generateTelluric(cfg, res);
+        case OCEAN -> generateOcean(cfg, res);
+        case ICE -> generateIce(cfg, res);
+        case LAVA -> generateLava(cfg, res);
+        case TELLURIC -> generateTelluric(cfg, res);
       };
     }
 

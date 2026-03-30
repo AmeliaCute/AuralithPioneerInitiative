@@ -5,7 +5,7 @@ import cute.ame.auralithpioneerinitiative.HoloPanel.HoloPanelClientState;
 import cute.ame.auralithpioneerinitiative.HoloPanel.HoloPanelRegistry;
 import cute.ame.auralithpioneerinitiative.HoloPanel.Panel.*;
 import cute.ame.auralithpioneerinitiative.Planet.Arid.Particle.AridGroundScatterParticle;
-import cute.ame.auralithpioneerinitiative.SkyPlanet.Texture.PlanetTextureGenerator;
+import cute.ame.auralithpioneerinitiative.SkyPlanet.Texture.PlanetTextureHelper;
 import cute.ame.auralithpioneerinitiative.SkyPlanet.Loader.SolarSystemLoader;
 import cute.ame.auralithpioneerinitiative.Registrie.ModParticles;
 import cute.ame.auralithpioneerinitiative.Ship.Entity.ModEntities;
@@ -45,7 +45,7 @@ public final class AuralithClient
   public static void onRegisterReloadListeners(RegisterClientReloadListenersEvent event)
   {
     event.registerReloadListener(SolarSystemLoader.INSTANCE);
-    event.registerReloadListener((prepBarrier, resourceManager, prepProfiler, applyProfiler, prepExec, applyExec) -> prepBarrier.wait(null).thenRunAsync(PlanetTextureGenerator::invalidateAll, applyExec));
+    event.registerReloadListener((prepBarrier, resourceManager, prepProfiler, applyProfiler, prepExec, applyExec) -> prepBarrier.wait(null).thenRunAsync(PlanetTextureHelper::invalidateAll, applyExec));
   }
 
   @SubscribeEvent

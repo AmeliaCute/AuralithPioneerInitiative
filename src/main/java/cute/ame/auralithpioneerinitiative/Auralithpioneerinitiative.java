@@ -2,10 +2,7 @@ package cute.ame.auralithpioneerinitiative;
 
 import com.mojang.logging.LogUtils;
 import cute.ame.auralithpioneerinitiative.Command.AuralithCommand;
-import cute.ame.auralithpioneerinitiative.Registrie.ModBlockEntities;
-import cute.ame.auralithpioneerinitiative.Registrie.ModBlocks;
-import cute.ame.auralithpioneerinitiative.Registrie.ModItems;
-import cute.ame.auralithpioneerinitiative.Registrie.ModParticles;
+import cute.ame.auralithpioneerinitiative.Registrie.*;
 import cute.ame.auralithpioneerinitiative.Ship.Data.ShipDefinitionLoader;
 import cute.ame.auralithpioneerinitiative.Ship.Entity.ModEntities;
 import cute.ame.auralithpioneerinitiative.Ship.Network.*;
@@ -27,6 +24,8 @@ public class Auralithpioneerinitiative
 
   public Auralithpioneerinitiative(IEventBus modEventBus, ModContainer modContainer)
   {
+    ModWorldgen.FEATURES.register(modEventBus);
+    ModWorldgen.registerCodecs();
     ModParticles.PARTICLE_TYPES.register(modEventBus);
     ModItems.ITEMS.register(modEventBus);
     ModBlocks.BLOCKS.register(modEventBus);

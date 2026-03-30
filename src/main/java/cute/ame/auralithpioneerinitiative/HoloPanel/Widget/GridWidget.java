@@ -1,13 +1,9 @@
 package cute.ame.auralithpioneerinitiative.HoloPanel.Widget;
 
 import net.minecraft.client.gui.GuiGraphics;
-
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Fixed-column grid. Cells are equal-sized and wrap automatically.
- */
 public class GridWidget extends HoloPanelWidget
 {
 

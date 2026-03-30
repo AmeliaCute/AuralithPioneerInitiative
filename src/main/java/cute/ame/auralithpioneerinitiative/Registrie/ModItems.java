@@ -3,7 +3,7 @@ package cute.ame.auralithpioneerinitiative.Registrie;
 import cute.ame.auralithpioneerinitiative.Auralithpioneerinitiative;
 import cute.ame.auralithpioneerinitiative.Planet.Arid.Item.AridCrystalShard;
 import cute.ame.auralithpioneerinitiative.Item.PortableThrusterItem;
-import cute.ame.auralithpioneerinitiative.Item.SpaceNavigatorItem;
+import cute.ame.auralithpioneerinitiative.Item.SpaceNavigatorItemDebug;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item.Properties;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -17,8 +17,8 @@ public final class ModItems
   public static final DeferredItem<PortableThrusterItem> PORTABLE_THRUSTER =
       ITEMS.register("portable_thruster", () -> new PortableThrusterItem(new Properties().stacksTo(1)));
 
-  public static final DeferredItem<SpaceNavigatorItem> SPACE_NAVIGATOR =
-      ITEMS.register("space_navigator", () -> new SpaceNavigatorItem(new Properties().stacksTo(1)));
+  public static final DeferredItem<SpaceNavigatorItemDebug> SPACE_NAVIGATOR =
+      ITEMS.register("space_navigator", () -> new SpaceNavigatorItemDebug(new Properties().stacksTo(1)));
 
   public static final DeferredItem<BlockItem> SHIP_CORE =
       ITEMS.register("ship_core", () -> new BlockItem(ModBlocks.SHIP_CORE.get(), new Properties()));

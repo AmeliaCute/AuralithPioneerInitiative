@@ -2,7 +2,7 @@ package cute.ame.auralithpioneerinitiative.SkyPlanet.Data;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import cute.ame.auralithpioneerinitiative.SkyPlanet.Texture.PlanetTextureGenerator;
+import cute.ame.auralithpioneerinitiative.SkyPlanet.Texture.PlanetTextureHelper;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.List;
@@ -47,7 +47,7 @@ public record PlanetDefinition(
   public ResourceLocation resolveTexture()
   {
     return procedural
-    .map(cfg -> PlanetTextureGenerator.getOrGenerate(cfg, id.toString()))
+    .map(cfg -> PlanetTextureHelper.getOrGenerate(cfg, id.toString()))
     .orElseGet(() -> texture.orElse(ResourceLocation.withDefaultNamespace("missingno")));
   }
 }
