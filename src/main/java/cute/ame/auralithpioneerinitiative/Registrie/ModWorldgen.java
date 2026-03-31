@@ -4,7 +4,7 @@ import cute.ame.auralithpioneerinitiative.Auralithpioneerinitiative;
 import cute.ame.auralithpioneerinitiative.Planet.Arid.Worldgen.AridBiomeSource;
 import cute.ame.auralithpioneerinitiative.Planet.Arid.Worldgen.AridChunkGenerator;
 import cute.ame.auralithpioneerinitiative.Planet.Arid.Worldgen.Feature.AridStrataFeature;
-import cute.ame.auralithpioneerinitiative.Planet.Arid.Worldgen.Feature.CrystalClusterFeature;
+import cute.ame.auralithpioneerinitiative.Planet.Arid.Worldgen.Feature.CrystalSpikeFeature;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -20,7 +20,7 @@ public final class ModWorldgen
 
   public static final DeferredRegister<Feature<?>> FEATURES = DeferredRegister.create(Registries.FEATURE, Auralithpioneerinitiative.MODID);
   public static final DeferredHolder<Feature<?>, AridStrataFeature> ARID_STRATA = FEATURES.register("arid_strata", () -> new AridStrataFeature(NoneFeatureConfiguration.CODEC));
-  public static final DeferredHolder<Feature<?>, CrystalClusterFeature> CRYSTAL_CLUSTER = FEATURES.register("crystal_cluster", () -> new CrystalClusterFeature(NoneFeatureConfiguration.CODEC));
+  public static final DeferredHolder<Feature<?>, CrystalSpikeFeature> CRYSTAL_SPIKE = FEATURES.register("crystal_spike", () -> new CrystalSpikeFeature(NoneFeatureConfiguration.CODEC));
 
   public static void registerCodecs()
   {
