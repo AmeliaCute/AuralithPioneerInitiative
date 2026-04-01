@@ -229,7 +229,7 @@ public final class AridChunkGenerator extends ChunkGenerator
       carveWorm(chunk, worldX, caveY, worldZ, ex, ey, ez, 7, seed + 80L + i, maxCaveY);
     }
 
-    int alcoveCount = 3 + (int)(hashCell(cellX, cellZ, seed + 9L) & 3L); // 3..6
+    int alcoveCount = 3 + (int)(hashCell(cellX, cellZ, seed + 9L) & 3L);
     for (int i = 0; i < alcoveCount; i++)
     {
       long ha = hashCell(cellX * 300L + i, cellZ * 300L + i, seed + 100L + i);

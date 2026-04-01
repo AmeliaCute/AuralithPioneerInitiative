@@ -6,6 +6,7 @@ import cute.ame.auralithpioneerinitiative.Registrie.*;
 import cute.ame.auralithpioneerinitiative.Ship.Data.ShipDefinitionLoader;
 import cute.ame.auralithpioneerinitiative.Ship.Entity.ModEntities;
 import cute.ame.auralithpioneerinitiative.Ship.Network.*;
+import cute.ame.auralithpioneerinitiative.SpaceSuit.Network.SuitSyncPacket;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
@@ -32,6 +33,7 @@ public class Auralithpioneerinitiative
     ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
     ModEntities.ENTITIES.register(modEventBus);
     ModEntities.DATA_SERIALIZERS.register(modEventBus);
+    ModAttachments.ATTACHMENT_TYPES.register(modEventBus);
     modContainer.registerConfig(ModConfig.Type.SERVER, Config.SPEC);
 
     modEventBus.addListener(Auralithpioneerinitiative::onRegisterPayloadHandlers);
@@ -68,6 +70,12 @@ public class Auralithpioneerinitiative
         HoloPanelSyncPacket.TYPE,
         HoloPanelSyncPacket.STREAM_CODEC,
         HoloPanelSyncPacket::handle
+    );
+
+    registrar.playToClient(
+        SuitSyncPacket.TYPE,
+        SuitSyncPacket.STREAM_CODEC,
+        SuitSyncPacket::handle
     );
 
     LOGGER.debug("[Auralith] Registered network payloads");

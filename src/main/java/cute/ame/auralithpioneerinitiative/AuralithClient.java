@@ -12,6 +12,7 @@ import cute.ame.auralithpioneerinitiative.Ship.Entity.ModEntities;
 import cute.ame.auralithpioneerinitiative.Ship.Input.FlightKeys;
 import cute.ame.auralithpioneerinitiative.Ship.Renderer.ShipClientCache;
 import cute.ame.auralithpioneerinitiative.Ship.Renderer.ShipEntityRenderer;
+import cute.ame.auralithpioneerinitiative.SpaceSuit.HUD.SuitHudOverlay;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -86,4 +87,11 @@ public final class AuralithClient
     );
     Auralithpioneerinitiative.LOGGER.debug("[Auralith] Registered particle providers");
   }
+
+  @SubscribeEvent
+  public static void onRegisterGuiLayers(RegisterGuiLayersEvent event)
+  {
+    SuitHudOverlay.onRegisterGuiLayers(event);
+  }
+
 }

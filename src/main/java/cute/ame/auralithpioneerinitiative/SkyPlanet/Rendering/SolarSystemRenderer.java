@@ -37,7 +37,6 @@ public final class SolarSystemRenderer
     public void renderSky(Matrix4f frustumMatrix, Matrix4f projectionMatrix, float partialTick, Camera camera, boolean isFoggy, Runnable skyFogSetup, ClientLevel level)
     {
         skyFogSetup.run();
-
         Matrix4f rotOnly = new Matrix4f(frustumMatrix);
         rotOnly.m03(0.0f).m13(0.0f).m23(0.0f);
 
@@ -85,20 +84,12 @@ public final class SolarSystemRenderer
             myPos = current.orbit().compute3DPosition(myAngle, myRadius, 1.0f);
         }
 
-        float pLen = (float)Math.sqrt(myPos[0]*myPos[0] + myPos[1]*myPos[1] + myPos[2]*myPos[2]);
-        float sunNX = pLen > 1e-6f ? -myPos[0] / pLen : 0f;
-        float sunNZ = pLen > 1e-6f ? -myPos[2] / pLen : 0f;
-
-        float sunAzimuth = (float)Math.atan2(sunNX, sunNZ);
-        float tiltRad = current != null ? (float)Math.toRadians(current.axialTilt()) : 0f;
-        float dayAngle = ((level.getDayTime() % 24000L) + partialTick) / 24000.0f * (float)(2.0 * Math.PI);
-
         float sunApparent = Math.max(0.08f, (float)(system.sun().size() * REF_AU / Math.max(myRadius, 0.01)));
+        float celestialAngle = level.getTimeOfDay(partialTick);
 
         ps.pushPose();
-        ps.mulPose(new Quaternionf().rotationY(-sunAzimuth + (float)Math.toRadians(90.0)));
-        ps.mulPose(new Quaternionf().rotationZ(tiltRad));
-        ps.mulPose(new Quaternionf().rotationX(dayAngle));
+        ps.mulPose(new Quaternionf().rotationY((float)Math.toRadians(-90.0)));
+        ps.mulPose(new Quaternionf().rotationX(celestialAngle * (float)(Math.PI * 2.0)));
 
         renderSunDirectional(ps, system.sun(), tick, partialTick, 0f, 1f, 0f, sunApparent);
 
@@ -163,10 +154,6 @@ public final class SolarSystemRenderer
         if (isMoon)
         {
             PlanetDefinition parent = parentOpt.get();
-            double parentAngle = parent.orbit().computeAngle(tick, partialTick);
-            double parentRadius = parent.orbit().computeCurrentRadius(parentAngle);
-            float[] parentPos = parent.orbit().compute3DPosition(parentAngle, parentRadius, 1.0f);
-
             double moonAngle = current.orbit().computeAngle(tick, partialTick);
             double moonRadius = current.orbit().computeCurrentRadius(moonAngle);
             float[] moonRel = current.orbit().compute3DPosition(moonAngle, moonRadius, 1.0f);
@@ -182,9 +169,9 @@ public final class SolarSystemRenderer
         {
             if (planet.id().equals(isMoon ? parentOpt.get().id() : currentPlanetId)) continue;
 
-            double theirAngle  = planet.orbit().computeAngle(tick, partialTick);
+            double theirAngle = planet.orbit().computeAngle(tick, partialTick);
             double theirRadius = planet.orbit().computeCurrentRadius(theirAngle);
-            float[] theirPos   = planet.orbit().compute3DPosition(theirAngle, theirRadius, 1.0f);
+            float[] theirPos = planet.orbit().compute3DPosition(theirAngle, theirRadius, 1.0f);
 
             float dx = theirPos[0] - myAbsPos[0];
             float dy = theirPos[1] - myAbsPos[1];
@@ -196,15 +183,14 @@ public final class SolarSystemRenderer
         }
 
         double myAbsRadius = Math.sqrt(myAbsPos[0]*myAbsPos[0] + myAbsPos[1]*myAbsPos[1] + myAbsPos[2]*myAbsPos[2]);
-
         float sdx = -myAbsPos[0];
         float sdy = (float)(myAbsRadius * 0.18);
         float sdz = -myAbsPos[2];
         float slen = (float) Math.sqrt(sdx*sdx + sdy*sdy + sdz*sdz);
         if (slen > 1e-6f)
         {
-            float sunApparentScale = (float)(REF_AU / Math.max(myAbsRadius, 0.01)) * 64f;
-            renderSunDirectional(ps, system.sun(), tick, partialTick, sdx/slen, sdy/slen, sdz/slen, sunApparentScale);
+            float sunApparent = Math.max(0.08f, (float)(system.sun().size() * REF_AU / Math.max(myAbsRadius, 0.01)));
+            renderSunDirectional(ps, system.sun(), tick, partialTick, sdx/slen, sdy/slen, sdz/slen, sunApparent);
         }
 
         Vec3 camPos = camera.getPosition();
@@ -464,7 +450,13 @@ public final class SolarSystemRenderer
         ps.pushPose();
         ps.translate(nx * SKY_RADIUS, ny * SKY_RADIUS, nz * SKY_RADIUS);
         poseAxialRotation(ps, sun.axialRotationSpeed(), tick, partialTick);
+
+        ps.pushPose();
+        float coreSize = sun.size() * apparentScale;
+        ps.scale(coreSize, coreSize, coreSize);
         if (sun.glowLayers() > 0) renderSunGlow(ps, sun, apparentScale);
+        ps.popPose();
+
         ps.popPose();
     }
 
@@ -757,7 +749,7 @@ public final class SolarSystemRenderer
     private void poseAxialRotation(PoseStack ps, float speed, long tick, float partialTick)
     {
         float angle = ((tick + partialTick) * speed * 0.001f) % (float)(2.0 * Math.PI);
-        ps.mulPose(new Quaternionf().rotationY(angle));
+        ps.mulPose(new Quaternionf().rotationZ(angle));
     }
 
     private static float lerp(float a, float b, float t) { return a + (b - a) * t; }
