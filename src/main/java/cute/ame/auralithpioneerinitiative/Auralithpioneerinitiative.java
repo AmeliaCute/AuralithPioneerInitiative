@@ -6,6 +6,8 @@ import cute.ame.auralithpioneerinitiative.Registrie.*;
 import cute.ame.auralithpioneerinitiative.Ship.Data.ShipDefinitionLoader;
 import cute.ame.auralithpioneerinitiative.Ship.Entity.ModEntities;
 import cute.ame.auralithpioneerinitiative.Ship.Network.*;
+import cute.ame.auralithpioneerinitiative.SpaceSuit.Network.FlashlightTogglePacket;
+import cute.ame.auralithpioneerinitiative.SpaceSuit.Network.OpenSuitMenuPacket;
 import cute.ame.auralithpioneerinitiative.SpaceSuit.Network.SuitSyncPacket;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -36,6 +38,7 @@ public class Auralithpioneerinitiative
     ModEntities.ENTITIES.register(modEventBus);
     ModEntities.DATA_SERIALIZERS.register(modEventBus);
     ModAttachments.ATTACHMENT_TYPES.register(modEventBus);
+    ModMenuTypes.MENU_TYPES.register(modEventBus);
     modContainer.registerConfig(ModConfig.Type.SERVER, Config.SPEC);
 
     modEventBus.addListener(Auralithpioneerinitiative::onRegisterPayloadHandlers);
@@ -78,6 +81,18 @@ public class Auralithpioneerinitiative
         SuitSyncPacket.TYPE,
         SuitSyncPacket.STREAM_CODEC,
         SuitSyncPacket::handle
+    );
+
+    registrar.playToServer(
+        OpenSuitMenuPacket.TYPE,
+        OpenSuitMenuPacket.STREAM_CODEC,
+        OpenSuitMenuPacket::handle
+    );
+
+    registrar.playToServer(
+        FlashlightTogglePacket.TYPE,
+        FlashlightTogglePacket.STREAM_CODEC,
+        FlashlightTogglePacket::handle
     );
 
     LOGGER.debug("[Auralith] Registered network payloads");

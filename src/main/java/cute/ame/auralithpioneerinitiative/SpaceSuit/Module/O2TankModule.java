@@ -16,7 +16,7 @@ public final class O2TankModule extends SuitModule {
 
   public O2TankModule(O2TankTier tier)
   {
-    super(ModuleSlotType.O2, new Properties().stacksTo(1));
+    super(ModuleSlotType.O2_TANK, new Properties().stacksTo(1));
     this.tier = tier;
   }
 
@@ -76,12 +76,13 @@ public final class O2TankModule extends SuitModule {
   }
 
   @Override
-  public void appendHoverText(ItemStack stack, TooltipContext ctx, List<Component> lines, TooltipFlag flag) {
+  public void appendHoverText(ItemStack stack, TooltipContext ctx, List<Component> lines, TooltipFlag flag)
+  {
     int stored = getStored(stack);
-    int cap    = getCapacity(stack);
-    int pct    = cap == 0 ? 0 : stored * 100 / cap;
+    int cap = getCapacity(stack);
+    int pct = cap == 0 ? 0 : stored * 100 / cap;
     int minFull = stored / 1200;
-    int secRem  = (stored % 1200) / 20;
+    int secRem = (stored % 1200) / 20;
     lines.add(Component.literal(String.format("§7O2: §f%d§7/§f%d §7(%d%%) - §f%dm%02ds", stored, cap, pct, minFull, secRem)));
     lines.add(Component.literal("§8Tier: §7" + tier.name()));
   }

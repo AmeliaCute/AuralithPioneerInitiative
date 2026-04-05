@@ -3,28 +3,29 @@ package cute.ame.auralithpioneerinitiative.SpaceSuit.Data;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
-public final class SuitData {
-
+public final class SuitData
+{
   public static final int O2_MAX = 6_000;
   public static final int ENERGY_MAX = 100_000;
   private int o2Max = O2_MAX;
 
-  private int o2Level   = 0;
+  private int o2Level = 0;
   private int energyLevel = 0;
   private boolean flashlight = false;
-  private boolean helmetOn   = false;
+  private boolean helmetOn = false;
 
   public SuitData() {}
 
-  private SuitData(int o2, int energy, boolean fl, boolean helmet) {
-    o2Level = o2; energyLevel = energy; flashlight = fl; helmetOn = helmet;
+  private SuitData(int o2, int o2_max, int energy, boolean fl, boolean helmet) {
+    o2Level = o2; o2Max = o2_max; energyLevel = energy; flashlight = fl; helmetOn = helmet;
   }
 
   public static final Codec<SuitData> CODEC = RecordCodecBuilder.create(i -> i.group(
     Codec.INT .fieldOf("o2") .forGetter(d -> d.o2Level),
-    Codec.INT .fieldOf("energy") .forGetter(d -> d.energyLevel),
+    Codec.INT.optionalFieldOf("o2_max", O2_MAX).forGetter(d -> d.o2Max),
+    Codec.INT.fieldOf("energy").forGetter(d -> d.energyLevel),
     Codec.BOOL.fieldOf("flashlight").forGetter(d -> d.flashlight),
-    Codec.BOOL.fieldOf("helmet") .forGetter(d -> d.helmetOn)
+    Codec.BOOL.fieldOf("helmet").forGetter(d -> d.helmetOn)
   ).apply(i, SuitData::new));
 
   public int getO2() { return o2Level; }

@@ -1,5 +1,6 @@
 package cute.ame.auralithpioneerinitiative.Registrie;
 
+import com.mojang.serialization.Codec;
 import cute.ame.auralithpioneerinitiative.Auralithpioneerinitiative;
 import cute.ame.auralithpioneerinitiative.SpaceSuit.Data.SuitInventoryComponent;
 import net.minecraft.core.component.DataComponentType;
@@ -25,7 +26,7 @@ public final class ModDataComponents
   public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> O2_STORED =
       DATA_COMPONENTS.register("o2_stored", () ->
           DataComponentType.<Integer>builder()
-              .persistent(DataComponents.DAMAGE.codec())
+              .persistent(Codec.INT)
               .networkSynchronized(ByteBufCodecs.INT)
               .build()
       );

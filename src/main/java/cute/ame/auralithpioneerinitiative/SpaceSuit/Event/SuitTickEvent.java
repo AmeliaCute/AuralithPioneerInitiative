@@ -25,7 +25,8 @@ public final class SuitTickEvent {
   private static final long O2_GEN_EU_PER_TICK = 32L;
   private static final int O2_GEN_PER_TICK = 2;
   private static final int O2_DRAIN_PER_TICK = 1;
-
+  private static final int REGULATOR_DRAIN_INTERVAL = 10;
+  private static final int REBREATHER_DRAIN_INTERVAL = 20;
   private static final int SYNC_INTERVAL = 20;
 
   @SubscribeEvent
@@ -38,29 +39,43 @@ public final class SuitTickEvent {
 
     ItemStack helmetStack = player.getInventory().armor.get(3);
     boolean helmetOn = helmetStack.getItem() instanceof SuitArmorItem;
-    if (data.isHelmetOn() != helmetOn) {
+    if (data.isHelmetOn() != helmetOn)
+    {
       data.setHelmetOn(helmetOn);
       SuitSyncPacket.sendTo(player);
     }
-
     if (!helmetOn) return;
 
-    SuitInventoryComponent helmetInv = helmetStack.getOrDefault(
-        ModDataComponents.SUIT_INVENTORY.get(),
-        SuitInventoryComponent.ofSize(2)
-    );
+    ItemStack chestStack = player.getInventory().armor.get(2);
+    boolean chestOn = chestStack.getItem() instanceof SuitArmorItem;
 
-    boolean hasGenerator = hasModuleInSlot(helmetInv, ModItems.MODULE_O2_GENERATOR.get());
-    if (hasGenerator)
-    {
-      long drained = drainBatteriesEU(player, O2_GEN_EU_PER_TICK);
-      if (drained >= O2_GEN_EU_PER_TICK) refillO2Tank(helmetStack, helmetInv, O2_GEN_PER_TICK);
-    }
+    SuitInventoryComponent helmetInv = getInv(helmetStack, 2);
+    SuitInventoryComponent chestInv = chestOn ? getInv(chestStack, 5) : SuitInventoryComponent.ofSize(0);
+
+    boolean hasRegulator = hasModule(helmetInv, ModItems.MODULE_REGULATOR.get());
+    boolean hasRebreather = chestOn && hasModule(chestInv, ModItems.MODULE_REBREATHER.get());
+    boolean canBreathe = hasRegulator && hasRebreather;
 
     if (isUnbreathable(player))
     {
-      if (getTotalO2(helmetInv) > 0) drainO2Tank(helmetStack, helmetInv, O2_DRAIN_PER_TICK);
-      else player.hurt(player.damageSources().drown(), 1.0f);
+      if (!canBreathe)
+        player.hurt(player.damageSources().drown(), 1.0f);
+      else
+      {
+        if (gt % REGULATOR_DRAIN_INTERVAL == 0) drainFromChest(chestStack, chestInv, 1);
+        if (gt % REBREATHER_DRAIN_INTERVAL == 0) drainFromChest(chestStack, chestInv, 1);
+
+        boolean hasGenerator = hasModule(chestInv, ModItems.MODULE_O2_GENERATOR.get());
+        if (hasGenerator)
+        {
+          long drained = drainBatteriesEU(chestStack, chestInv, O2_GEN_EU_PER_TICK);
+          if (drained >= O2_GEN_EU_PER_TICK) refillTanks(chestStack, chestInv, O2_GEN_PER_TICK);
+        }
+
+        int o2 = getTotalO2(chestInv);
+        if (o2 > 0) drainFromChest(chestStack, chestInv, O2_DRAIN_PER_TICK);
+        else player.hurt(player.damageSources().drown(), 1.0f);
+      }
     }
 
     if (data.isFlashlight())
@@ -69,114 +84,119 @@ public final class SuitTickEvent {
       if (data.getEnergy() <= 0)
       {
         data.setFlashlight(false);
-        player.sendSystemMessage(Component.literal("§7[Flashlight] Battery depleted"));
+        player.sendSystemMessage(Component.literal("§7[Suit] Flashlight battery depleted"));
         SuitSyncPacket.sendTo(player);
       }
     }
 
     if (gt % SYNC_INTERVAL == 0)
     {
-      int o2 = getTotalO2(helmetInv);
-      int o2Max = getO2MaxForHud(helmetInv);
+      int o2 = getTotalO2(chestInv);
+      int o2Max = getMaxO2(chestInv);
       data.setO2(o2);
-      long euStored = getBatteryTotal(player);
-      data.setEnergy((int) Math.min(euStored / 1000L, Integer.MAX_VALUE));
+      data.setO2Max(o2Max);
+      data.setEnergy((int) Math.min(getBatteryTotal(chestInv) / 1000L, Integer.MAX_VALUE));
       SuitSyncPacket.sendTo(player);
     }
   }
 
-  private static boolean hasModuleInSlot(SuitInventoryComponent inv, net.minecraft.world.item.Item moduleItem)
+  private static SuitInventoryComponent getInv(ItemStack stack, int defaultSize)
+  {
+    return stack.getOrDefault(ModDataComponents.SUIT_INVENTORY.get(), SuitInventoryComponent.ofSize(defaultSize));
+  }
+
+  private static boolean hasModule(SuitInventoryComponent inv, net.minecraft.world.item.Item item)
   {
     for (int i = 0; i < inv.size(); i++)
-      if (inv.get(i).is(moduleItem)) return true;
+      if (inv.get(i).is(item)) return true;
 
     return false;
   }
 
-  private static int getTotalO2(SuitInventoryComponent inv)
+  private static int getTotalO2(SuitInventoryComponent chestInv)
   {
-    ItemStack tank = findTank(inv);
-    return tank.isEmpty() ? 0 : O2TankModule.getStored(tank);
-  }
-
-  private static int getO2Capacity(SuitInventoryComponent inv)
-  {
-    ItemStack tank = findTank(inv);
-    return tank.isEmpty() ? 0 : O2TankModule.getCapacity(tank);
-  }
-
-  private static void drainO2Tank(ItemStack helmetStack, SuitInventoryComponent inv, int amount)
-  {
-    mutateTank(helmetStack, inv, -amount);
-  }
-
-  private static void refillO2Tank(ItemStack helmetStack, SuitInventoryComponent inv, int amount)
-  {
-    mutateTank(helmetStack, inv, amount);
-  }
-
-  private static void mutateTank(ItemStack helmetStack, SuitInventoryComponent inv, int delta)
-  {
-    for (int i = 0; i < inv.size(); i++)
+    int total = 0;
+    for (int i = 0; i < chestInv.size(); i++)
     {
-      ItemStack s = inv.get(i);
+      ItemStack s = chestInv.get(i);
+      if (s.getItem() instanceof O2TankModule) total += O2TankModule.getStored(s);
+    }
+    return total;
+  }
+
+  private static int getMaxO2(SuitInventoryComponent chestInv)
+  {
+    int total = 0;
+    for (int i = 0; i < chestInv.size(); i++)
+    {
+      ItemStack s = chestInv.get(i);
+      if (s.getItem() instanceof O2TankModule) total += O2TankModule.getCapacity(s);
+    }
+
+    return total == 0 ? SuitData.O2_MAX : total;
+  }
+
+  private static void drainFromChest(ItemStack chestStack, SuitInventoryComponent inv, int amount)
+  {
+    int remaining = amount;
+    SuitInventoryComponent current = inv;
+
+    for (int i = 0; i < current.size() && remaining > 0; i++)
+    {
+      ItemStack s = current.get(i);
       if (!(s.getItem() instanceof O2TankModule)) continue;
 
-      if (delta < 0) O2TankModule.drain(s, -delta);
-      else O2TankModule.refill(s, delta);
-
-      helmetStack.set(ModDataComponents.SUIT_INVENTORY.get(), inv.with(i, s));
-      return;
+      int drained = O2TankModule.drain(s, remaining);
+      remaining -= drained;
+      current = current.with(i, s);
     }
+
+    chestStack.set(ModDataComponents.SUIT_INVENTORY.get(), current);
   }
 
-  private static ItemStack findTank(SuitInventoryComponent inv)
+  private static void refillTanks(ItemStack chestStack, SuitInventoryComponent inv, int amount)
   {
-    for (int i = 0; i < inv.size(); i++)
-      if (inv.get(i).getItem() instanceof O2TankModule) return inv.get(i);
+    int remaining = amount;
+    SuitInventoryComponent current = inv;
 
-    return ItemStack.EMPTY;
+    for (int i = 0; i < current.size() && remaining > 0; i++)
+    {
+      ItemStack s = current.get(i);
+      if (!(s.getItem() instanceof O2TankModule)) continue;
+
+      int added = O2TankModule.refill(s, remaining);
+      remaining -= added;
+      current = current.with(i, s);
+    }
+
+    chestStack.set(ModDataComponents.SUIT_INVENTORY.get(), current);
   }
 
-  private static int getO2MaxForHud(SuitInventoryComponent inv)
+  private static long drainBatteriesEU(ItemStack chestStack, SuitInventoryComponent inv, long maxEu)
   {
-    ItemStack tank = findTank(inv);
-    return tank.isEmpty() ? SuitData.O2_MAX : O2TankModule.getCapacity(tank);
-  }
-
-  private static long drainBatteriesEU(ServerPlayer player, long maxEu)
-  {
-    ItemStack chestStack = player.getInventory().armor.get(2);
-    if (!(chestStack.getItem() instanceof SuitArmorItem)) return 0L;
-
-    SuitInventoryComponent chestInv = chestStack.getOrDefault(ModDataComponents.SUIT_INVENTORY.get(), SuitInventoryComponent.ofSize(3));
     long remaining = maxEu;
+    SuitInventoryComponent current = inv;
     boolean mutated = false;
 
-    for (int i = 0; i < chestInv.size() && remaining > 0; i++)
+    for (int i = 0; i < current.size() && remaining > 0; i++)
     {
-      ItemStack bat = chestInv.get(i);
+      ItemStack bat = current.get(i);
       if (bat.isEmpty()) continue;
 
       long drained = SuitEnergyBridge.extractEU(bat, remaining, false);
-      if (drained > 0)
-      {
+      if (drained > 0) {
         remaining -= drained;
-        chestInv = chestInv.with(i, bat);
+        current = current.with(i, bat);
         mutated = true;
       }
     }
 
-    if (mutated) chestStack.set(ModDataComponents.SUIT_INVENTORY.get(), chestInv);
+    if (mutated) chestStack.set(ModDataComponents.SUIT_INVENTORY.get(), current);
     return maxEu - remaining;
   }
 
-  private static long getBatteryTotal(ServerPlayer player)
+  private static long getBatteryTotal(SuitInventoryComponent inv)
   {
-    ItemStack chestStack = player.getInventory().armor.get(2);
-    if (!(chestStack.getItem() instanceof SuitArmorItem)) return 0L;
-
-    SuitInventoryComponent inv = chestStack.getOrDefault(ModDataComponents.SUIT_INVENTORY.get(), SuitInventoryComponent.ofSize(3));
     long total = 0L;
     for (int i = 0; i < inv.size(); i++) total += SuitEnergyBridge.getStoredEU(inv.get(i));
     return total;
@@ -185,7 +205,7 @@ public final class SuitTickEvent {
   private static boolean isUnbreathable(ServerPlayer player)
   {
     return AuralithAPI.getBindingForDimension(player.level().dimension())
-      .map(b -> b.isSurfaceDimension() && AuralithAPI.getGravityFor(player.level().dimension()) != 1.0f)
-      .orElse(false);
+        .map(b -> b.isSurfaceDimension() && AuralithAPI.getGravityFor(player.level().dimension()) != 1.0f)
+        .orElse(false);
   }
 }

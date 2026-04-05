@@ -1,5 +1,6 @@
 package cute.ame.auralithpioneerinitiative;
 
+import cute.ame.auralithpioneerinitiative.Registrie.ModMenuTypes;
 import cute.ame.auralithpioneerinitiative.SkyPlanet.Dimension.SpaceDimensionEffect;
 import cute.ame.auralithpioneerinitiative.HoloPanel.HoloPanelClientState;
 import cute.ame.auralithpioneerinitiative.HoloPanel.HoloPanelRegistry;
@@ -12,7 +13,9 @@ import cute.ame.auralithpioneerinitiative.Ship.Entity.ModEntities;
 import cute.ame.auralithpioneerinitiative.Ship.Input.FlightKeys;
 import cute.ame.auralithpioneerinitiative.Ship.Renderer.ShipClientCache;
 import cute.ame.auralithpioneerinitiative.Ship.Renderer.ShipEntityRenderer;
+import cute.ame.auralithpioneerinitiative.SpaceSuit.GUI.SuitEquipmentScreen;
 import cute.ame.auralithpioneerinitiative.SpaceSuit.HUD.SuitHudOverlay;
+import cute.ame.auralithpioneerinitiative.SpaceSuit.Input.SuitKeybinds;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -65,6 +68,7 @@ public final class AuralithClient
   public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event)
   {
     for (var key : FlightKeys.ALL) event.register(key);
+    for (var key : SuitKeybinds.ALL) event.register(key);
   }
 
   @SubscribeEvent
@@ -86,6 +90,12 @@ public final class AuralithClient
         new AridGroundScatterParticle.Provider()
     );
     Auralithpioneerinitiative.LOGGER.debug("[Auralith] Registered particle providers");
+  }
+
+  @SubscribeEvent
+  public static void onRegisterMenuScreens(RegisterMenuScreensEvent event)
+  {
+    event.register(ModMenuTypes.SUIT_EQUIPMENT.get(), SuitEquipmentScreen::new);
   }
 
   @SubscribeEvent

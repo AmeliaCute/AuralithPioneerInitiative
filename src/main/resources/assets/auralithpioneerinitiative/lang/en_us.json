@@ -44,13 +44,12 @@
   "key.auralith.flight.dismount": "Dismount",
   "key.auralith.flight.free_look": "Free Look",
 
+  "item.auralithpioneerinitiative.module_regulator": "Demand Regulator",
+  "item.auralithpioneerinitiative.module_rebreather": "Rebreather Unit",
   "item.auralithpioneerinitiative.module_o2_tank_basic": "O2 Tank (Basic)",
   "item.auralithpioneerinitiative.module_o2_tank_advanced": "O2 Tank (Advanced)",
   "item.auralithpioneerinitiative.module_o2_tank_elite": "O2 Tank (Elite)",
-  "item.auralithpioneerinitiative.module_o2_generator": "O2 Generator Module",
+  "item.auralithpioneerinitiative.module_o2_generator": "O2 Generator",
   "item.auralithpioneerinitiative.module_flashlight": "Flashlight Module",
-  "item.auralithpioneerinitiative.module_jetpack": "Jetpack Module",
-  "item.auralithpioneerinitiative.arid_helmet": "Arid Helmet",
-  "item.auralithpioneerinitiative.arid_chestplate": "Arid Chestplate",
-  "item.auralithpioneerinitiative.arid_leggings": "Arid Leggings"
+  "item.auralithpioneerinitiative.module_jetpack": "Jetpack Module"
 }

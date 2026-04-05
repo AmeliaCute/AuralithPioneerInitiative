@@ -2,9 +2,13 @@ package cute.ame.auralithpioneerinitiative.SpaceSuit.Data;
 
 public enum ModuleSlotType
 {
-  O2,
+  REGULATOR,
   FLASHLIGHT,
-  JETPACK,
+  REBREATHER,
+  O2_TANK,
   BATTERY,
+  JETPACK,
   FREE,
+
+  ;
 }

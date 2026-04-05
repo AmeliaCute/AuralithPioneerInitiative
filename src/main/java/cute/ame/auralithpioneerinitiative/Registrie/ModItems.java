@@ -82,7 +82,7 @@ public final class ModItems
       ITEMS.register("arid_helmet", () -> new SuitArmorItem(
           ModArmorMaterials.ARID,
           ArmorItem.Type.HELMET,
-          new SuitPieceDefinition(ModuleSlotType.O2, ModuleSlotType.FLASHLIGHT),
+          new SuitPieceDefinition(ModuleSlotType.REGULATOR, ModuleSlotType.FLASHLIGHT),
           new Properties()
       ));
 
@@ -90,7 +90,13 @@ public final class ModItems
       ITEMS.register("arid_chestplate", () -> new SuitArmorItem(
           ModArmorMaterials.ARID,
           ArmorItem.Type.CHESTPLATE,
-          new SuitPieceDefinition(ModuleSlotType.JETPACK, ModuleSlotType.BATTERY, ModuleSlotType.BATTERY),
+          new SuitPieceDefinition(
+              ModuleSlotType.REBREATHER,
+              ModuleSlotType.O2_TANK,
+              ModuleSlotType.O2_TANK,
+              ModuleSlotType.BATTERY,
+              ModuleSlotType.BATTERY
+          ),
           new Properties()
       ));
 
@@ -101,6 +107,14 @@ public final class ModItems
           new SuitPieceDefinition(ModuleSlotType.FREE, ModuleSlotType.FREE),
           new Properties()
       ));
+
+  public static final DeferredItem<SuitModule> MODULE_REGULATOR =
+      ITEMS.register("module_regulator", () ->
+          new SuitModule(ModuleSlotType.REGULATOR, new Properties().stacksTo(1).durability(800)));
+
+  public static final DeferredItem<SuitModule> MODULE_REBREATHER =
+      ITEMS.register("module_rebreather", () ->
+          new SuitModule(ModuleSlotType.REBREATHER, new Properties().stacksTo(1).durability(800)));
 
   public static final DeferredItem<O2TankModule> MODULE_O2_TANK_BASIC =
       ITEMS.register("module_o2_tank_basic",
@@ -115,16 +129,15 @@ public final class ModItems
           () -> new O2TankModule(O2TankTier.ELITE));
 
   public static final DeferredItem<SuitModule> MODULE_O2_GENERATOR =
-      ITEMS.register("module_o2_generator",
-          () -> new SuitModule(ModuleSlotType.O2, new Properties().stacksTo(1)));
+      ITEMS.register("module_o2_generator", () ->
+          new SuitModule(ModuleSlotType.O2_TANK, new Properties().stacksTo(1).durability(500)));
 
   public static final DeferredItem<SuitModule> MODULE_FLASHLIGHT =
       ITEMS.register("module_flashlight", () ->
-          new SuitModule(ModuleSlotType.FLASHLIGHT, new Properties().durability(400)));
+          new SuitModule(ModuleSlotType.FLASHLIGHT, new Properties().stacksTo(1).durability(400)));
 
   public static final DeferredItem<SuitModule> MODULE_JETPACK =
       ITEMS.register("module_jetpack", () ->
-          new SuitModule(ModuleSlotType.JETPACK, new Properties().durability(600)));
-
+          new SuitModule(ModuleSlotType.JETPACK, new Properties().stacksTo(1).durability(600)));
 
 }
