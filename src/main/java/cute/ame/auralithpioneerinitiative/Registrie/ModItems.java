@@ -4,6 +4,13 @@ import cute.ame.auralithpioneerinitiative.Auralithpioneerinitiative;
 import cute.ame.auralithpioneerinitiative.Planet.Arid.Item.AridCrystalShard;
 import cute.ame.auralithpioneerinitiative.Item.PortableThrusterItem;
 import cute.ame.auralithpioneerinitiative.Item.SpaceNavigatorItemDebug;
+import cute.ame.auralithpioneerinitiative.SpaceSuit.Data.ModuleSlotType;
+import cute.ame.auralithpioneerinitiative.SpaceSuit.Data.O2TankTier;
+import cute.ame.auralithpioneerinitiative.SpaceSuit.Data.SuitPieceDefinition;
+import cute.ame.auralithpioneerinitiative.SpaceSuit.Item.SuitArmorItem;
+import cute.ame.auralithpioneerinitiative.SpaceSuit.Module.O2TankModule;
+import cute.ame.auralithpioneerinitiative.SpaceSuit.Module.SuitModule;
+import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item.Properties;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -70,4 +77,54 @@ public final class ModItems
 
   public static final DeferredItem<BlockItem> ALIEN_CONDUIT =
       ITEMS.register("alien_conduit", () -> new BlockItem(ModBlocks.ALIEN_CONDUIT.get(), new Properties()));
+
+  public static final DeferredItem<SuitArmorItem> ARID_HELMET =
+      ITEMS.register("arid_helmet", () -> new SuitArmorItem(
+          ModArmorMaterials.ARID,
+          ArmorItem.Type.HELMET,
+          new SuitPieceDefinition(ModuleSlotType.O2, ModuleSlotType.FLASHLIGHT),
+          new Properties()
+      ));
+
+  public static final DeferredItem<SuitArmorItem> ARID_CHESTPLATE =
+      ITEMS.register("arid_chestplate", () -> new SuitArmorItem(
+          ModArmorMaterials.ARID,
+          ArmorItem.Type.CHESTPLATE,
+          new SuitPieceDefinition(ModuleSlotType.JETPACK, ModuleSlotType.BATTERY, ModuleSlotType.BATTERY),
+          new Properties()
+      ));
+
+  public static final DeferredItem<SuitArmorItem> ARID_LEGGINGS =
+      ITEMS.register("arid_leggings", () -> new SuitArmorItem(
+          ModArmorMaterials.ARID,
+          ArmorItem.Type.LEGGINGS,
+          new SuitPieceDefinition(ModuleSlotType.FREE, ModuleSlotType.FREE),
+          new Properties()
+      ));
+
+  public static final DeferredItem<O2TankModule> MODULE_O2_TANK_BASIC =
+      ITEMS.register("module_o2_tank_basic",
+          () -> new O2TankModule(O2TankTier.BASIC));
+
+  public static final DeferredItem<O2TankModule> MODULE_O2_TANK_ADVANCED =
+      ITEMS.register("module_o2_tank_advanced",
+          () -> new O2TankModule(O2TankTier.ADVANCED));
+
+  public static final DeferredItem<O2TankModule> MODULE_O2_TANK_ELITE =
+      ITEMS.register("module_o2_tank_elite",
+          () -> new O2TankModule(O2TankTier.ELITE));
+
+  public static final DeferredItem<SuitModule> MODULE_O2_GENERATOR =
+      ITEMS.register("module_o2_generator",
+          () -> new SuitModule(ModuleSlotType.O2, new Properties().stacksTo(1)));
+
+  public static final DeferredItem<SuitModule> MODULE_FLASHLIGHT =
+      ITEMS.register("module_flashlight", () ->
+          new SuitModule(ModuleSlotType.FLASHLIGHT, new Properties().durability(400)));
+
+  public static final DeferredItem<SuitModule> MODULE_JETPACK =
+      ITEMS.register("module_jetpack", () ->
+          new SuitModule(ModuleSlotType.JETPACK, new Properties().durability(600)));
+
+
 }

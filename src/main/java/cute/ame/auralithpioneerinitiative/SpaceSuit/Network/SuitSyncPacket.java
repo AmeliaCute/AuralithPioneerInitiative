@@ -17,6 +17,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 public record SuitSyncPacket
 (
     int o2,
+    int o2Max,
     int energy,
     boolean flashlight,
     boolean helmet
@@ -28,6 +29,7 @@ public record SuitSyncPacket
   public static final StreamCodec<RegistryFriendlyByteBuf, SuitSyncPacket> STREAM_CODEC =
     StreamCodec.composite(
       ByteBufCodecs.INT, SuitSyncPacket::o2,
+      ByteBufCodecs.INT, SuitSyncPacket::o2Max,
       ByteBufCodecs.INT, SuitSyncPacket::energy,
       ByteBufCodecs.BOOL, SuitSyncPacket::flashlight,
       ByteBufCodecs.BOOL, SuitSyncPacket::helmet,
@@ -51,9 +53,12 @@ public record SuitSyncPacket
     });
   }
 
-  public static void sendTo(ServerPlayer player)
-  {
+  public static void sendTo(ServerPlayer player) {
     SuitData d = player.getData(ModAttachments.SUIT_DATA);
-    PacketDistributor.sendToPlayer(player, new SuitSyncPacket(d.getO2(), d.getEnergy(), d.isFlashlight(), d.isHelmetOn()));
+    PacketDistributor.sendToPlayer(player,
+        new SuitSyncPacket(
+            d.getO2(), d.getO2Max(),
+            d.getEnergy(), d.isFlashlight(), d.isHelmetOn()
+        ));
   }
 }

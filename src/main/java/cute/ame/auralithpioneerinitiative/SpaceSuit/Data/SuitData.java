@@ -6,12 +6,13 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 public final class SuitData {
 
   public static final int O2_MAX = 6_000;
-  public static final int ENERGY_MAX = 3_600;
+  public static final int ENERGY_MAX = 100_000;
+  private int o2Max = O2_MAX;
 
-  private int o2Level = O2_MAX;
-  private int energyLevel = ENERGY_MAX;
+  private int o2Level   = 0;
+  private int energyLevel = 0;
   private boolean flashlight = false;
-  private boolean helmetOn = false;
+  private boolean helmetOn   = false;
 
   public SuitData() {}
 
@@ -27,21 +28,22 @@ public final class SuitData {
   ).apply(i, SuitData::new));
 
   public int getO2() { return o2Level; }
+  public int  getO2Max() { return o2Max; }
+  public void setO2Max(int v){ o2Max = v; }
+  public float o2Frac() { return o2Max > 0 ? (float) o2Level / o2Max : 0f; }
   public int getEnergy() { return energyLevel; }
   public boolean isFlashlight() { return flashlight; }
   public boolean isHelmetOn() { return helmetOn; }
-  public float o2Frac() { return (float) o2Level / O2_MAX; }
-  public float energyFrac() { return (float) energyLevel / ENERGY_MAX; }
+  public float energyFrac() { return energyLevel > 0 ? (float) energyLevel / ENERGY_MAX : 0f; }
 
   public void setO2(int v) { o2Level = clamp(v, 0, O2_MAX); }
   public void setEnergy(int v) { energyLevel = clamp(v, 0, ENERGY_MAX); }
-  public void setFlashlight(boolean v){ flashlight  = v; }
+  public void setFlashlight(boolean v) { flashlight = v; }
   public void setHelmetOn(boolean v) { helmetOn = v; }
   public void drainO2(int n) { setO2(o2Level - n); }
   public void drainEnergy(int n) { setEnergy(energyLevel - n); }
 
-  private static int clamp(int v, int lo, int hi)
-  {
+  private static int clamp(int v, int lo, int hi) {
     return v < lo ? lo : Math.min(v, hi);
   }
 }

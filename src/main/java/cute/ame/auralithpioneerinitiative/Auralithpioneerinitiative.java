@@ -28,6 +28,8 @@ public class Auralithpioneerinitiative
     ModWorldgen.FEATURES.register(modEventBus);
     ModWorldgen.registerCodecs();
     ModParticles.PARTICLE_TYPES.register(modEventBus);
+    ModDataComponents.DATA_COMPONENTS.register(modEventBus);
+    ModArmorMaterials.ARMOR_MATERIALS.register(modEventBus);
     ModItems.ITEMS.register(modEventBus);
     ModBlocks.BLOCKS.register(modEventBus);
     ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
