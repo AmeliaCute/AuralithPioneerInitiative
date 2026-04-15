@@ -22,7 +22,7 @@ import org.slf4j.Logger;
 @Mod(Auralithpioneerinitiative.MODID)
 public class Auralithpioneerinitiative
 {
-  public static final String MODID  = "auralithpioneerinitiative";
+  public static final String MODID = "auralithpioneerinitiative";
   public static final Logger LOGGER = LogUtils.getLogger();
 
   public Auralithpioneerinitiative(IEventBus modEventBus, ModContainer modContainer)
@@ -35,6 +35,7 @@ public class Auralithpioneerinitiative
     ModItems.ITEMS.register(modEventBus);
     ModBlocks.BLOCKS.register(modEventBus);
     ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
+    ModSpecialMachines.init();
     ModEntities.ENTITIES.register(modEventBus);
     ModEntities.DATA_SERIALIZERS.register(modEventBus);
     ModAttachments.ATTACHMENT_TYPES.register(modEventBus);
@@ -88,7 +89,6 @@ public class Auralithpioneerinitiative
         OpenSuitMenuPacket.STREAM_CODEC,
         OpenSuitMenuPacket::handle
     );
-
     registrar.playToServer(
         FlashlightTogglePacket.TYPE,
         FlashlightTogglePacket.STREAM_CODEC,
