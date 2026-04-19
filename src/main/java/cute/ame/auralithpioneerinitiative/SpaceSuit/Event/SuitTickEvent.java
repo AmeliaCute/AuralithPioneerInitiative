@@ -28,6 +28,9 @@ public final class SuitTickEvent {
   private static final int REGULATOR_DRAIN_INTERVAL = 10;
   private static final int REBREATHER_DRAIN_INTERVAL = 20;
   private static final int SYNC_INTERVAL = 20;
+  private static final long REGULATOR_EU_PER_TICK  = 1L;
+  private static final long REBREATHER_EU_PER_TICK = 2L;
+  private static final long ACTIVE_EU_COST = REGULATOR_EU_PER_TICK + REBREATHER_EU_PER_TICK;
 
   @SubscribeEvent
   public static void onPlayerTickPre(PlayerTickEvent.Pre event)
@@ -55,11 +58,11 @@ public final class SuitTickEvent {
     boolean hasRegulator = hasModule(helmetInv, ModItems.MODULE_REGULATOR.get());
     boolean hasRebreather = chestOn && hasModule(chestInv, ModItems.MODULE_REBREATHER.get());
     boolean canBreathe = hasRegulator && hasRebreather;
-
-    if (isUnbreathable(player))
+    boolean isHazardous = AuralithAPI.isUnbreathable(player);
+    if (isHazardous)
     {
       if (!canBreathe)
-        player.hurt(player.damageSources().drown(), 1.0f);
+        player.hurt(player.damageSources().drown(), 2.5f);
       else
       {
         if (gt % REGULATOR_DRAIN_INTERVAL == 0) drainFromChest(chestStack, chestInv, 1);
@@ -74,7 +77,7 @@ public final class SuitTickEvent {
 
         int o2 = getTotalO2(chestInv);
         if (o2 > 0) drainFromChest(chestStack, chestInv, O2_DRAIN_PER_TICK);
-        else player.hurt(player.damageSources().drown(), 1.0f);
+        else player.hurt(player.damageSources().drown(), 2.5f);
       }
     }
 
@@ -93,8 +96,8 @@ public final class SuitTickEvent {
     {
       int o2 = getTotalO2(chestInv);
       int o2Max = getMaxO2(chestInv);
-      data.setO2(o2);
       data.setO2Max(o2Max);
+      data.setO2(o2);
       data.setEnergy((int) Math.min(getBatteryTotal(chestInv) / 1000L, Integer.MAX_VALUE));
       SuitSyncPacket.sendTo(player);
     }
@@ -200,12 +203,5 @@ public final class SuitTickEvent {
     long total = 0L;
     for (int i = 0; i < inv.size(); i++) total += SuitEnergyBridge.getStoredEU(inv.get(i));
     return total;
-  }
-
-  private static boolean isUnbreathable(ServerPlayer player)
-  {
-    return AuralithAPI.getBindingForDimension(player.level().dimension())
-        .map(b -> b.isSurfaceDimension() && AuralithAPI.getGravityFor(player.level().dimension()) != 1.0f)
-        .orElse(false);
   }
 }

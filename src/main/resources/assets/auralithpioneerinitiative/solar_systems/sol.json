@@ -48,13 +48,13 @@
     {
       "id": "auralithpioneerinitiative:overworld",
       "procedural": { "type": "telluric",
-        "seed": 8675309, "resolution": 16,
-        "octaves": 6, "roughness": 0.55,
+        "seed": 8609, "resolution": 16,
+        "octaves": 8, "roughness": 0.55,
         "primary_color":   [0.08, 0.22, 0.65], "secondary_color": [0.22, 0.50, 0.12]
       },
       "size": 22.0, "axial_rotation_speed": 1.2, "axial_tilt": 23.5,
       "orbit": { "radius": 100.0, "period_days": 365.0, "start_angle": 695, "inclination": 0.0, "ascending_node": 0.0, "eccentricity": 0.017 },
-      "atmosphere": { "scale": 1.12, "color": [0.30, 0.60, 1.00], "opacity": 0.80, "fresnel_power": 3.0 },
+      "atmosphere": { "breathable": true, "scale": 1.12, "color": [0.30, 0.60, 1.00], "opacity": 0.80, "fresnel_power": 3.0 },
       "clouds": { "texture": "auralithpioneerinitiative:textures/sky/overworld_clouds.png", "scale": 1.06, "rotation_speed": 0.4 },
       "dimension": "minecraft:overworld",
       "gravity": 1.0,

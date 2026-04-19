@@ -1,9 +1,11 @@
 package cute.ame.auralithpioneerinitiative.API;
 
+import cute.ame.auralithpioneerinitiative.SkyPlanet.Data.AtmosphereDefinition;
 import cute.ame.auralithpioneerinitiative.SkyPlanet.Data.PlanetDefinition;
 import cute.ame.auralithpioneerinitiative.SkyPlanet.Data.SolarSystemDefinition;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 
 import java.util.*;
@@ -22,6 +24,11 @@ public final class AuralithAPI
     public boolean isSpaceDimension() { return type == BindingType.SPACE; }
     public boolean isOrbitDimension() { return type == BindingType.ORBIT; }
     public boolean isSurfaceDimension(){ return type == BindingType.SURFACE; }
+
+    public AuralithAPI getAtmosphere()
+    {
+      return null;
+    }
   }
 
   public static void registerSolarSystem(ResourceLocation id, SolarSystemDefinition definition)
@@ -76,6 +83,25 @@ public final class AuralithAPI
     if (system == null) return 1.0f;
 
     return system.planets().stream().filter(p -> p.id().equals(binding.planetId())).findFirst().map(PlanetDefinition::gravity).orElse(1.0f);
+  }
+
+  public static boolean isBreathable(ResourceKey<Level> dimension)
+  {
+    DimensionBinding binding = DIM_BINDINGS.get(dimension.location());
+    if (binding == null) return true;
+    if (binding.type() != BindingType.SURFACE) return false;
+
+    SolarSystemDefinition system = SYSTEMS.get(binding.systemId());
+    if (system == null) return true;
+
+    return system.planets().stream().filter(p -> p.id().equals(binding.planetId())).findFirst().flatMap(PlanetDefinition::atmosphere).flatMap(AtmosphereDefinition::breathable).orElse(false);
+  }
+
+  public static boolean isUnbreathable(ServerPlayer player)
+  {
+    return AuralithAPI.getBindingForDimension(player.level().dimension())
+        .map(b -> !b.isSurfaceDimension() || !AuralithAPI.isBreathable(player.level().dimension()))
+        .orElse(true);
   }
 
   public static void clearAll()

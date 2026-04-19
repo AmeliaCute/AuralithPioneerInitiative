@@ -37,7 +37,7 @@ public final class SuitData
   public boolean isHelmetOn() { return helmetOn; }
   public float energyFrac() { return energyLevel > 0 ? (float) energyLevel / ENERGY_MAX : 0f; }
 
-  public void setO2(int v) { o2Level = clamp(v, 0, O2_MAX); }
+  public void setO2(int v) { o2Level = Math.max(0, v); }
   public void setEnergy(int v) { energyLevel = clamp(v, 0, ENERGY_MAX); }
   public void setFlashlight(boolean v) { flashlight = v; }
   public void setHelmetOn(boolean v) { helmetOn = v; }

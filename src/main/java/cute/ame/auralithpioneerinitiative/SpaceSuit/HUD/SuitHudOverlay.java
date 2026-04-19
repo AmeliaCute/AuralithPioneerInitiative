@@ -4,6 +4,7 @@ package cute.ame.auralithpioneerinitiative.SpaceSuit.HUD;
 import cute.ame.auralithpioneerinitiative.Auralithpioneerinitiative;
 import cute.ame.auralithpioneerinitiative.Registrie.ModAttachments;
 import cute.ame.auralithpioneerinitiative.SpaceSuit.HUD.Components.*;
+import cute.ame.auralithpioneerinitiative.SpaceSuit.Item.SuitArmorItem;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -18,30 +19,14 @@ public final class SuitHudOverlay
 
   public static final ResourceLocation LAYER_ID = ResourceLocation.fromNamespaceAndPath(Auralithpioneerinitiative.MODID, "suit_hud");
 
-  private static final ResourceLocation[] SUPPRESSED =
-  {
-    VanillaGuiLayers.PLAYER_HEALTH,
-    VanillaGuiLayers.FOOD_LEVEL,
-    VanillaGuiLayers.ARMOR_LEVEL,
-    VanillaGuiLayers.AIR_LEVEL,
-    VanillaGuiLayers.HOTBAR
-  };
-
   public static void onRegisterGuiLayers(RegisterGuiLayersEvent event)
   {
     event.registerAboveAll(LAYER_ID, SuitHudOverlay::render);
   }
 
-  public static void onPreRenderLayer(RenderGuiLayerEvent.Pre event)
-  {
-    if (!isActive()) return;
-    ResourceLocation layer = event.getName();
-    for (ResourceLocation sup : SUPPRESSED)
-      if (sup.equals(layer)) { event.setCanceled(true); return; }
-  }
-
   private static void render(GuiGraphics gui, DeltaTracker dt)
   {
+    if (!isActive()) return;
     Minecraft mc = Minecraft.getInstance();
     if (mc.player == null || mc.screen != null || mc.getOverlay() != null) return;
 
@@ -56,6 +41,6 @@ public final class SuitHudOverlay
   {
     Minecraft mc = Minecraft.getInstance();
     if (mc.player == null || mc.player.isSpectator()) return false;
-    return mc.player.getData(ModAttachments.SUIT_DATA).isHelmetOn();
+    return mc.player.getInventory().getArmor(3).getItem() instanceof SuitArmorItem;
   }
 }

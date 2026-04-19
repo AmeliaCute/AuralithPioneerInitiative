@@ -8,6 +8,7 @@ import cute.ame.auralithpioneerinitiative.SkyPlanet.Data.PlanetDefinition;
 import cute.ame.auralithpioneerinitiative.SkyPlanet.Data.RingDefinition;
 import cute.ame.auralithpioneerinitiative.SkyPlanet.Data.SolarSystemDefinition;
 import cute.ame.auralithpioneerinitiative.SkyPlanet.Data.SunDefinition;
+import cute.ame.auralithpioneerinitiative.SkyPlanet.Texture.PlanetTextureHelper;
 import cute.ame.auralithpioneerinitiative.SkyPlanet.Texture.RingTextureHelper;
 import cute.ame.auralithpioneerinitiative.SkyPlanet.RenderingHelper.ShaderHelper;
 import net.minecraft.client.Camera;
@@ -671,73 +672,67 @@ public final class SolarSystemRenderer
         }
     }
 
-    private void renderTextureCube(PoseStack ps, ResourceLocation texture)
+    private void renderTextureCube(PoseStack ps, PlanetTextureHelper.CubemapTextures cubemap)
     {
-        if(ShaderHelper.shadersActive()) RenderSystem.setShader(GameRenderer::getRendertypeEntitySolidShader);
+        if (ShaderHelper.shadersActive()) RenderSystem.setShader(GameRenderer::getRendertypeEntitySolidShader);
         else RenderSystem.setShader(GameRenderer::getPositionTexShader);
 
-        RenderSystem.setShaderTexture(0, texture);
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-
-        GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST);
-        GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
-
         RenderSystem.disableDepthTest();
         RenderSystem.depthMask(false);
         RenderSystem.disableBlend();
         RenderSystem.enableCull();
 
-        Tesselator tess = Tesselator.getInstance();
-        BufferBuilder buf;
-        if(ShaderHelper.shadersActive()) buf = tess.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.NEW_ENTITY);
-        else buf = tess.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-
         Matrix4f m = ps.last().pose();
         float h = 0.5f;
-
         int light = net.minecraft.client.renderer.LightTexture.FULL_BRIGHT;
         int overlay = net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY;
+        boolean shaders = ShaderHelper.shadersActive();
 
-        buf.addVertex(m,-h, h, h).setColor(1f,1f,1f,1f).setUv(0,1).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0, 1, 0);
-        buf.addVertex(m, h, h, h).setColor(1f,1f,1f,1f).setUv(1,1).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0, 1, 0);
-        buf.addVertex(m, h, h,-h).setColor(1f,1f,1f,1f).setUv(1,0).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0, 1, 0);
-        buf.addVertex(m,-h, h,-h).setColor(1f,1f,1f,1f).setUv(0,0).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0, 1, 0);
-
-        buf.addVertex(m,-h,-h,-h).setColor(1f,1f,1f,1f).setUv(0,0).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0,-1, 0);
-        buf.addVertex(m, h,-h,-h).setColor(1f,1f,1f,1f).setUv(1,0).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0,-1, 0);
-        buf.addVertex(m, h,-h, h).setColor(1f,1f,1f,1f).setUv(1,1).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0,-1, 0);
-        buf.addVertex(m,-h,-h, h).setColor(1f,1f,1f,1f).setUv(0,1).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0,-1, 0);
-
-        buf.addVertex(m, h, h, h).setColor(1f,1f,1f,1f).setUv(0,0).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0, 0, 1);
-        buf.addVertex(m,-h, h, h).setColor(1f,1f,1f,1f).setUv(1,0).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0, 0, 1);
-        buf.addVertex(m,-h,-h, h).setColor(1f,1f,1f,1f).setUv(1,1).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0, 0, 1);
-        buf.addVertex(m, h,-h, h).setColor(1f,1f,1f,1f).setUv(0,1).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0, 0, 1);
-
-        buf.addVertex(m,-h, h,-h).setColor(1f,1f,1f,1f).setUv(0,0).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0, 0,-1);
-        buf.addVertex(m, h, h,-h).setColor(1f,1f,1f,1f).setUv(1,0).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0, 0,-1);
-        buf.addVertex(m, h,-h,-h).setColor(1f,1f,1f,1f).setUv(1,1).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0, 0,-1);
-        buf.addVertex(m,-h,-h,-h).setColor(1f,1f,1f,1f).setUv(0,1).setOverlay(overlay).setLight(light).setNormal(ps.last(), 0, 0,-1);
-
-        buf.addVertex(m, h, h,-h).setColor(1f,1f,1f,1f).setUv(0,0).setOverlay(overlay).setLight(light).setNormal(ps.last(), 1, 0, 0);
-        buf.addVertex(m, h, h, h).setColor(1f,1f,1f,1f).setUv(1,0).setOverlay(overlay).setLight(light).setNormal(ps.last(), 1, 0, 0);
-        buf.addVertex(m, h,-h, h).setColor(1f,1f,1f,1f).setUv(1,1).setOverlay(overlay).setLight(light).setNormal(ps.last(), 1, 0, 0);
-        buf.addVertex(m, h,-h,-h).setColor(1f,1f,1f,1f).setUv(0,1).setOverlay(overlay).setLight(light).setNormal(ps.last(), 1, 0, 0);
-
-        buf.addVertex(m,-h, h, h).setColor(1f,1f,1f,1f).setUv(0,0).setOverlay(overlay).setLight(light).setNormal(ps.last(),-1, 0, 0);
-        buf.addVertex(m,-h, h,-h).setColor(1f,1f,1f,1f).setUv(1,0).setOverlay(overlay).setLight(light).setNormal(ps.last(),-1, 0, 0);
-        buf.addVertex(m,-h,-h,-h).setColor(1f,1f,1f,1f).setUv(1,1).setOverlay(overlay).setLight(light).setNormal(ps.last(),-1, 0, 0);
-        buf.addVertex(m,-h,-h, h).setColor(1f,1f,1f,1f).setUv(0,1).setOverlay(overlay).setLight(light).setNormal(ps.last(),-1, 0, 0);
-
-        BufferUploader.drawWithShader(buf.buildOrThrow());
+        drawCubeFace(ps, m, cubemap.top(), shaders, light, overlay, -h, h, h, h, h, h, h, h,-h, -h, h,-h,  0, 1, 0);
+        drawCubeFace(ps, m, cubemap.bottom(), shaders, light, overlay, -h,-h,-h,  h,-h,-h, h,-h, h, -h,-h, h,  0,-1, 0);
+        drawCubeFace(ps, m, cubemap.front(), shaders, light, overlay, h, h, h, -h, h, h, -h,-h, h, h,-h, h,  0, 0, 1);
+        drawCubeFace(ps, m, cubemap.back(), shaders, light, overlay, -h, h,-h, h, h,-h, h,-h,-h, -h,-h,-h,  0, 0,-1);
+        drawCubeFace(ps, m, cubemap.right(), shaders, light, overlay, h, h,-h, h, h, h, h,-h, h, h,-h,-h,  1, 0, 0);
+        drawCubeFace(ps, m, cubemap.left(), shaders, light, overlay, -h, h, h, -h, h,-h, -h,-h,-h, -h,-h, h, -1, 0, 0);
 
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
         RenderSystem.depthMask(true);
     }
 
+    private void drawCubeFace(PoseStack ps, Matrix4f m, ResourceLocation tex, boolean shaders, int light, int overlay, float x0, float y0, float z0, float x1, float y1, float z1, float x2, float y2, float z2, float x3, float y3, float z3, float nx, float ny, float nz)
+    {
+        RenderSystem.setShaderTexture(0, tex);
+        GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST);
+        GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
+
+        Tesselator tess = Tesselator.getInstance();
+        BufferBuilder buf = shaders
+            ? tess.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.NEW_ENTITY)
+            : tess.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+
+        if (shaders)
+        {
+            buf.addVertex(m, x0, y0, z0).setColor(1f,1f,1f,1f).setUv(0,0).setOverlay(overlay).setLight(light).setNormal(ps.last(), nx, ny, nz);
+            buf.addVertex(m, x1, y1, z1).setColor(1f,1f,1f,1f).setUv(1,0).setOverlay(overlay).setLight(light).setNormal(ps.last(), nx, ny, nz);
+            buf.addVertex(m, x2, y2, z2).setColor(1f,1f,1f,1f).setUv(1,1).setOverlay(overlay).setLight(light).setNormal(ps.last(), nx, ny, nz);
+            buf.addVertex(m, x3, y3, z3).setColor(1f,1f,1f,1f).setUv(0,1).setOverlay(overlay).setLight(light).setNormal(ps.last(), nx, ny, nz);
+        }
+        else
+        {
+            buf.addVertex(m, x0, y0, z0).setUv(0,0);
+            buf.addVertex(m, x1, y1, z1).setUv(1,0);
+            buf.addVertex(m, x2, y2, z2).setUv(1,1);
+            buf.addVertex(m, x3, y3, z3).setUv(0,1);
+        }
+
+        BufferUploader.drawWithShader(buf.buildOrThrow());
+    }
+
     private void renderColoredCube(PoseStack ps, float r, float g, float b, float a)
     {
-        Tesselator    tess = Tesselator.getInstance();
-        BufferBuilder buf  = tess.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        Tesselator tess = Tesselator.getInstance();
+        BufferBuilder buf = tess.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
         Matrix4f m = ps.last().pose();
         for (float[][] face : CUBE_FACES)
             for (float[] v : face)
@@ -749,7 +744,7 @@ public final class SolarSystemRenderer
     private void poseAxialRotation(PoseStack ps, float speed, long tick, float partialTick)
     {
         float angle = ((tick + partialTick) * speed * 0.001f) % (float)(2.0 * Math.PI);
-        ps.mulPose(new Quaternionf().rotationZ(angle));
+        ps.mulPose(new Quaternionf().rotationY(angle));
     }
 
     private static float lerp(float a, float b, float t) { return a + (b - a) * t; }
