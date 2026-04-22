@@ -4,7 +4,7 @@ import cute.ame.auralithpioneerinitiative.Auralithpioneerinitiative;
 import cute.ame.auralithpioneerinitiative.Registrie.ModBlockEntities;
 import cute.ame.auralithpioneerinitiative.Ship.Data.ShipDefinition;
 import cute.ame.auralithpioneerinitiative.Ship.Data.ShipRegistry;
-import cute.ame.auralithpioneerinitiative.Ship.Entity.ModEntities;
+import cute.ame.auralithpioneerinitiative.Registrie.ModEntities;
 import cute.ame.auralithpioneerinitiative.Ship.Entity.ShipEntity;
 import cute.ame.auralithpioneerinitiative.Ship.Network.ShipSnapshotPacket;
 import cute.ame.auralithpioneerinitiative.Ship.Shipyard.ShipyardManager;

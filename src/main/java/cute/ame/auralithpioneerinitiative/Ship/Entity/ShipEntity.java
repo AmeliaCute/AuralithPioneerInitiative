@@ -1,6 +1,7 @@
 package cute.ame.auralithpioneerinitiative.Ship.Entity;
 
 import cute.ame.auralithpioneerinitiative.Auralithpioneerinitiative;
+import cute.ame.auralithpioneerinitiative.Registrie.ModEntities;
 import cute.ame.auralithpioneerinitiative.Ship.Data.ShipDefinition;
 import cute.ame.auralithpioneerinitiative.Ship.Data.ShipRegistry;
 import cute.ame.auralithpioneerinitiative.Ship.Network.ShipSnapshotPacket;
@@ -9,7 +10,6 @@ import cute.ame.auralithpioneerinitiative.Ship.Physics.FlightInput;
 import cute.ame.auralithpioneerinitiative.Ship.Physics.ShipPhysics;
 import cute.ame.auralithpioneerinitiative.Ship.Physics.ShipTransformData;
 import cute.ame.auralithpioneerinitiative.Ship.Physics.ShipTransformRegistry;
-import cute.ame.auralithpioneerinitiative.Ship.Shipyard.ShipyardAllocator;
 import cute.ame.auralithpioneerinitiative.Ship.Shipyard.ShipyardManager;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;

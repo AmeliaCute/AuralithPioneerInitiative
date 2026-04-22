@@ -4,11 +4,16 @@ import com.mojang.logging.LogUtils;
 import cute.ame.auralithpioneerinitiative.Command.AuralithCommand;
 import cute.ame.auralithpioneerinitiative.Registrie.*;
 import cute.ame.auralithpioneerinitiative.Ship.Data.ShipDefinitionLoader;
-import cute.ame.auralithpioneerinitiative.Ship.Entity.ModEntities;
+import cute.ame.auralithpioneerinitiative.Registrie.ModEntities;
 import cute.ame.auralithpioneerinitiative.Ship.Network.*;
 import cute.ame.auralithpioneerinitiative.SpaceSuit.Network.FlashlightTogglePacket;
 import cute.ame.auralithpioneerinitiative.SpaceSuit.Network.OpenSuitMenuPacket;
 import cute.ame.auralithpioneerinitiative.SpaceSuit.Network.SuitSyncPacket;
+import cute.ame.auralithpioneerinitiative.vehicle.Network.VehicleInputPacket;
+import cute.ame.auralithpioneerinitiative.vehicle.Network.VehicleSnapshotPacket;
+import cute.ame.auralithpioneerinitiative.vehicle.Network.VehicleTransformPacket;
+import cute.ame.auralithpioneerinitiative.vehicle.Register.ModVehicleBlocks;
+import cute.ame.auralithpioneerinitiative.vehicle.Register.ModVehicleEntities;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
@@ -34,9 +39,13 @@ public class Auralithpioneerinitiative
     ModArmorMaterials.ARMOR_MATERIALS.register(modEventBus);
     ModItems.ITEMS.register(modEventBus);
     ModBlocks.BLOCKS.register(modEventBus);
+    ModVehicleEntities.ENTITIES.register(modEventBus);
+    ModVehicleBlocks.BLOCKS.register(modEventBus);
+    ModVehicleBlocks.BLOCK_ENTITIES.register(modEventBus);
     ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
     ModSpecialMachines.init();
     ModEntities.ENTITIES.register(modEventBus);
+    ModVehicleEntities.ENTITIES.register(modEventBus);
     ModEntities.DATA_SERIALIZERS.register(modEventBus);
     ModAttachments.ATTACHMENT_TYPES.register(modEventBus);
     ModMenuTypes.MENU_TYPES.register(modEventBus);
@@ -89,10 +98,29 @@ public class Auralithpioneerinitiative
         OpenSuitMenuPacket.STREAM_CODEC,
         OpenSuitMenuPacket::handle
     );
+
     registrar.playToServer(
         FlashlightTogglePacket.TYPE,
         FlashlightTogglePacket.STREAM_CODEC,
         FlashlightTogglePacket::handle
+    );
+
+    registrar.playToClient(
+        VehicleTransformPacket.TYPE,
+        VehicleTransformPacket.STREAM_CODEC,
+        VehicleTransformPacket::handle
+    );
+
+    registrar.playToClient(
+        VehicleSnapshotPacket.TYPE,
+        VehicleSnapshotPacket.STREAM_CODEC,
+        VehicleSnapshotPacket::handle
+    );
+
+    registrar.playToServer(
+        VehicleInputPacket.TYPE,
+        VehicleInputPacket.STREAM_CODEC,
+        VehicleInputPacket::handle
     );
 
     LOGGER.debug("[Auralith] Registered network payloads");

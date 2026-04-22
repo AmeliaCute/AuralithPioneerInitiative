@@ -9,13 +9,17 @@ import cute.ame.auralithpioneerinitiative.Planet.Arid.Particle.AridGroundScatter
 import cute.ame.auralithpioneerinitiative.SkyPlanet.Texture.PlanetTextureHelper;
 import cute.ame.auralithpioneerinitiative.SkyPlanet.Loader.SolarSystemLoader;
 import cute.ame.auralithpioneerinitiative.Registrie.ModParticles;
-import cute.ame.auralithpioneerinitiative.Ship.Entity.ModEntities;
+import cute.ame.auralithpioneerinitiative.Registrie.ModEntities;
 import cute.ame.auralithpioneerinitiative.Ship.Input.FlightKeys;
 import cute.ame.auralithpioneerinitiative.Ship.Renderer.ShipClientCache;
 import cute.ame.auralithpioneerinitiative.Ship.Renderer.ShipEntityRenderer;
 import cute.ame.auralithpioneerinitiative.SpaceSuit.GUI.SuitEquipmentScreen;
 import cute.ame.auralithpioneerinitiative.SpaceSuit.HUD.SuitHudOverlay;
 import cute.ame.auralithpioneerinitiative.SpaceSuit.Input.SuitKeybinds;
+import cute.ame.auralithpioneerinitiative.vehicle.Client.NoopVehicleRenderer;
+import cute.ame.auralithpioneerinitiative.vehicle.Client.VehicleClientCache;
+import cute.ame.auralithpioneerinitiative.vehicle.Register.ModVehicleEntities;
+import cute.ame.auralithpioneerinitiative.vehicle.Client.VehicleRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -62,6 +66,11 @@ public final class AuralithClient
   public static void onRegisterEntityRenderers(EntityRenderersEvent.RegisterRenderers event)
   {
     event.registerEntityRenderer(ModEntities.SHIP.get(), ShipEntityRenderer::new);
+
+    event.registerEntityRenderer(ModVehicleEntities.SPACESHIP.get(),      NoopVehicleRenderer::new);
+    event.registerEntityRenderer(ModVehicleEntities.ROCKET.get(),         NoopVehicleRenderer::new);
+    event.registerEntityRenderer(ModVehicleEntities.SUBMARINE.get(),      NoopVehicleRenderer::new);
+    event.registerEntityRenderer(ModVehicleEntities.GROUND_VEHICLE.get(), NoopVehicleRenderer::new);
   }
 
   @SubscribeEvent
@@ -77,6 +86,7 @@ public final class AuralithClient
     if (event.getLevel().isClientSide())
     {
       ShipClientCache.evictAll();
+      VehicleClientCache.evictAll();
       HoloPanelRegistry.getInstance().destroyAllFBOs();
       HoloPanelClientState.getInstance().clear();
     }

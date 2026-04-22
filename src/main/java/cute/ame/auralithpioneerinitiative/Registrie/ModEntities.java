@@ -1,9 +1,10 @@
-package cute.ame.auralithpioneerinitiative.Ship.Entity;
+package cute.ame.auralithpioneerinitiative.Registrie;
 
 import cute.ame.auralithpioneerinitiative.Auralithpioneerinitiative;
+import cute.ame.auralithpioneerinitiative.Ship.Entity.ShipEntity;
+import cute.ame.auralithpioneerinitiative.vehicle.Types.SpaceshipEntity;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.syncher.EntityDataSerializer;
-import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
@@ -43,5 +44,14 @@ public final class ModEntities
           .clientTrackingRange(512)
           .updateInterval(1)
           .build(ResourceLocation.fromNamespaceAndPath(Auralithpioneerinitiative.MODID, "ship").toString())
+      );
+
+  public static final DeferredHolder<EntityType<?>, EntityType<SpaceshipEntity>> SPACESHIP =
+      ENTITIES.register("spaceship", () ->
+          EntityType.Builder.<SpaceshipEntity>of(SpaceshipEntity::new, MobCategory.MISC)
+              .sized(1.0f, 1.0f)
+              .clientTrackingRange(512)
+              .updateInterval(1)
+              .build(ResourceLocation.fromNamespaceAndPath(Auralithpioneerinitiative.MODID, "spaceship").toString())
       );
 }
